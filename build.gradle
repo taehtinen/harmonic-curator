@@ -32,6 +32,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
     implementation 'io.r2dbc:r2dbc-postgresql:0.8.13.RELEASE'
+    implementation 'com.ongres.scram:common:3.2' // CVE-2025-59432
     implementation 'org.springframework.boot:spring-boot-starter-flyway'
     implementation 'org.flywaydb:flyway-database-postgresql'
     runtimeOnly 'org.postgresql:postgresql'
@@ -45,18 +46,9 @@ dependencies {
 
     dependencyManagement {
         imports {
-            mavenBom "io.netty:netty-bom:4.2.8.Final"
+            mavenBom "io.netty:netty-bom:4.2.8.Final" // CVE-2025-67735
         }
     }
-
-    dependencies {
-        constraints {
-            add('implementation', 'com.ongres.scram:scram-common:3.2;https://github.com/ongres/scram.git') {
-                because 'CVE-2025-59432 - fixed timing-attack by using MessageDigest.isEqual'
-            }
-        }
-    }
-
 }
 
 tasks.named('test') {
