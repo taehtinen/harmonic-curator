@@ -1,16 +1,54 @@
-export type SpotifyArtist = {
-  id: string;
-  name: string;
-  genres: string[];
-  popularity: number;
-  followers: { total: number };
-};
-
-export type SpotifyArtistResponse = {
+export interface SpotifyArtistsResponse {
   artists: {
     items: SpotifyArtist[];
+    next: string | null;
+    total: number;
   };
-};
+}
+
+export interface SpotifyArtist {
+  id: string;
+  name: string;
+  followers: {
+    total: number;
+  };
+  popularity: number;
+  genres: string[];
+}
+
+export interface SpotifyTracksResponse {
+  tracks: SpotifyTrack[];
+}
+
+export interface SpotifyTrack {
+  id: string;
+  name: string;
+  popularity: number;
+  track_number: number;
+  is_playable: boolean;
+  album: {
+    id: string;
+    name: string;
+    release_date: string;
+  };
+}
+
+export interface SpotifyPlaylist {
+  id: string;
+  name: string;
+  description: string;
+  tracks: {
+    total: number;
+    items: {
+      added_at: string;
+      track: SpotifyTrack;
+    }[];
+  }
+}
+
+export interface SpotifySnapshotResponse {
+  snapshot_id: string;
+}
 
 export class SpotifyClient {
   private accessToken: string | null = null;
@@ -99,6 +137,66 @@ export class SpotifyClient {
     }
   }
 
+  public async addTracksToPlaylist(playlistId: string, trackIds: string[]): Promise<void> {
+    const url = `https://api.spotify.com/v1/playlists/${playlistId}/tracks`;
+    const body = {
+      uris: trackIds.map(id => `spotify:track:${id}`),
+    };
+    console.log(body);
+    const data = await this.fetch<SpotifySnapshotResponse>('POST', url, body);
+    console.log(`Added ${trackIds.length} tracks to playlist ${playlistId} with snapshot id ${data.snapshot_id}`);
+  }
+
+  public async createPlaylist(name: string, description: string): Promise<SpotifyPlaylist> {
+    const url = `https://api.spotify.com/v1/users/${this.config.spotifyUserId}/playlists`;
+    const body = {
+      name: name,
+      public: true,
+      collaborative: false,
+      description: description
+    };
+    const data = await this.fetch<SpotifyPlaylist>('POST', url, body);
+    console.log(`Created playlist: ${name}`);
+    return data;
+  }
+
+  public async getArtist(artistId: string): Promise<SpotifyArtist | null> {
+    const url = `https://api.spotify.com/v1/artists/${artistId}?market=${SPOTIFY_MARKET}`;
+    try {
+      const data = await this.fetch<SpotifyArtist>('GET', url);
+      return data;
+    } catch (error) {
+      console.error(`Error fetching artist with ID ${artistId}:`, error);
+      return null;
+    }
+  }
+
+  public async getArtistsTopTracks(artistId: string): Promise<SpotifyTrack[]> {
+    const url = `https://api.spotify.com/v1/artists/${artistId}/top-tracks?market=${this.spotifyMarket}`;
+    const data = await this.fetch<SpotifyTracksResponse>('GET', url);
+    return data.tracks;
+  }
+
+  public async removeAllTracksFromPlaylist(playlistId: string): Promise<number> {
+    const getUrl = `https://api.spotify.com/v1/playlists/${playlistId}/tracks?market=${this.spotifyMarket}`;
+    let totalRemoved = 0;
+    while (true) {
+      const getData = await this.fetch<{ items: { track: { uri: string } }[]; total: number }>('GET', getUrl);
+      const trackUris = getData.items.map(item => item.track.uri);
+      if (trackUris.length === 0) {
+        break;
+      }
+      const removeUrl = `https://api.spotify.com/v1/playlists/${playlistId}/tracks`;
+      const body = {
+        tracks: trackUris.map(uri => ({ uri })),
+      };
+      await this.fetch<SpotifySnapshotResponse>('DELETE', removeUrl, body);
+      totalRemoved += trackUris.length;
+      console.log(`Removed ${trackUris.length} tracks from playlist ${playlistId}`);
+    }
+    return totalRemoved;
+  }
+
   public async searchArtists(query: string): Promise<SpotifyArtist[]> {
     const allArtists: SpotifyArtist[] = [];
     const limit = 50; // Spotify API limit
@@ -107,7 +205,7 @@ export class SpotifyClient {
 
     while (offset < total) {
       const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=artist&limit=${limit}&offset=${offset}&market=${this.spotifyMarket}`;
-      const data = await this.fetch<SpotifyArtistResponse>("GET", url);
+      const data = await this.fetch<SpotifyArtistsResponse>("GET", url);
       allArtists.push(...data.artists.items);
       const itemsCount = data.artists.items.length;
       offset += itemsCount;
@@ -118,6 +216,16 @@ export class SpotifyClient {
     }
 
     return allArtists;
+  }
+
+  public async updatePlaylist(playlistId: string, name: string, description: string): Promise<void> {
+    const url = `https://api.spotify.com/v1/playlists/${playlistId}`;
+    const body = {
+      name: name,
+      description: description,
+    };
+    await this.fetch<void>('PUT', url, body);
+    console.log(`Updated playlist ${playlistId} with name "${name}" and description "${description}"`);
   }
 
 }
