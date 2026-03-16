@@ -15,14 +15,23 @@ export type SpotifyArtistResponse = {
 export class SpotifyClient {
   private accessToken: string | null = null;
   private expiresAt: number = 0;
+  private spotifyClientId: string;
+  private spotifyClientSecret: string;
+  private spotifyMarket: string;
 
   constructor(private readonly options: { code?: string, redirectUri?: string } = {}) {
     if (!process.env.SPOTIFY_CLIENT_ID) {
       throw new Error("Environment variable SPOTIFY_CLIENT_ID is not set");
     }
+    this.spotifyClientId = process.env.SPOTIFY_CLIENT_ID;
     if (!process.env.SPOTIFY_CLIENT_SECRET) {
       throw new Error("Environment variable SPOTIFY_CLIENT_SECRET is not set");
     }
+    this.spotifyClientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+    if (!process.env.SPOTIFY_MARKET) {
+      throw new Error("Environment variable SPOTIFY_MARKET is not set");
+    }
+    this.spotifyMarket = process.env.SPOTIFY_MARKET;
   }
 
   private async fetch<T>(method: string, url: string, body?: any): Promise<T> {
@@ -60,7 +69,7 @@ export class SpotifyClient {
 
   private async refreshAccessToken(): Promise<void> {
     try {
-      const authString = Buffer.from(`${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`).toString("base64");
+      const authString = Buffer.from(`${this.spotifyClientId}:${this.spotifyClientSecret}`).toString("base64");
 
       const response = await fetch("https://accounts.spotify.com/api/token", {
         method: "POST",
@@ -97,7 +106,7 @@ export class SpotifyClient {
     let offset = 0;
 
     while (offset < total) {
-      const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=artist&limit=${limit}&offset=${offset}&market=`;
+      const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=artist&limit=${limit}&offset=${offset}&market=${this.spotifyMarket}`;
       const data = await this.fetch<SpotifyArtistResponse>("GET", url);
       allArtists.push(...data.artists.items);
       const itemsCount = data.artists.items.length;
