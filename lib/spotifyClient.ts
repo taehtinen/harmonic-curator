@@ -56,6 +56,7 @@ export class SpotifyClient {
   private spotifyClientId: string;
   private spotifyClientSecret: string;
   private spotifyMarket: string;
+  private spotifyUserId: string;
 
   constructor(private readonly options: { code?: string, redirectUri?: string } = {}) {
     if (!process.env.SPOTIFY_CLIENT_ID) {
@@ -70,6 +71,10 @@ export class SpotifyClient {
       throw new Error("Environment variable SPOTIFY_MARKET is not set");
     }
     this.spotifyMarket = process.env.SPOTIFY_MARKET;
+    if (!process.env.SPOTIFY_USER_ID) {
+      throw new Error("Environment variable SPOTIFY_USER_ID is not set");
+    }
+    this.spotifyUserId = process.env.SPOTIFY_USER_ID;
   }
 
   private async fetch<T>(method: string, url: string, body?: any): Promise<T> {
@@ -148,7 +153,7 @@ export class SpotifyClient {
   }
 
   public async createPlaylist(name: string, description: string): Promise<SpotifyPlaylist> {
-    const url = `https://api.spotify.com/v1/users/${this.config.spotifyUserId}/playlists`;
+    const url = `https://api.spotify.com/v1/users/${this.spotifyUserId}/playlists`;
     const body = {
       name: name,
       public: true,
@@ -161,7 +166,7 @@ export class SpotifyClient {
   }
 
   public async getArtist(artistId: string): Promise<SpotifyArtist | null> {
-    const url = `https://api.spotify.com/v1/artists/${artistId}?market=${SPOTIFY_MARKET}`;
+    const url = `https://api.spotify.com/v1/artists/${artistId}?market=${this.spotifyMarket}`;
     try {
       const data = await this.fetch<SpotifyArtist>('GET', url);
       return data;
