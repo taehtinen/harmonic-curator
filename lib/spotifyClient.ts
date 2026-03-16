@@ -97,7 +97,7 @@ export class SpotifyClient {
     let offset = 0;
 
     while (offset < total) {
-      const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=artist&limit=${limit}&offset=${offset}`;
+      const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=artist&limit=${limit}&offset=${offset}&market=`;
       const data = await this.fetch<SpotifyArtistResponse>("GET", url);
       allArtists.push(...data.artists.items);
       const itemsCount = data.artists.items.length;
