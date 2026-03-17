@@ -22,5 +22,45 @@ model Artist {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  tracks       Track[]
+  albums       Album[]
+
   @@map("artist")
+}
+
+model Album {
+  id          BigInt   @id @default(autoincrement())
+  spotifyId   String   @unique
+  artistId    BigInt
+  name        String
+  releaseDate String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tracks      Track[]
+
+  artist      Artist   @relation(fields: [artistId], references: [id])
+
+  @@index([artistId])
+
+  @@map("album")
+}
+
+model Track {
+  id             BigInt   @id @default(autoincrement())
+  spotifyId      String   @unique
+  artistId       BigInt
+  albumId        BigInt
+  name           String
+  popularity     Int
+  trackNumber    Int      
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  album          Album    @relation(fields: [albumId], references: [id])
+  artist         Artist   @relation(fields: [artistId], references: [id])
+
+  @@index([albumId])
+  @@index([artistId])
+  @@map("track")
 }
