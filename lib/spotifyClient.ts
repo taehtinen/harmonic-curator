@@ -77,7 +77,7 @@ export class SpotifyClient {
     this.spotifyUserId = process.env.SPOTIFY_USER_ID;
   }
 
-  private async fetch<T>(method: string, url: string, body?: any): Promise<T> {
+  private async fetch<T>(method: string, url: string, body?: unknown): Promise<T> {
     console.log("Fetching", method, url);
     const headers = await this.getAuthorizationHeader();
     const response = await fetch(url, {
