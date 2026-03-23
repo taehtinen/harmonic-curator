@@ -19,12 +19,14 @@ model Artist {
   genres       String[]
   popularity   Int
   followers    Int
+  topTracksRefreshedAt DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   tracks       Track[]
   albums       Album[]
 
+  @@index([topTracksRefreshedAt])
   @@map("artist")
 }
 

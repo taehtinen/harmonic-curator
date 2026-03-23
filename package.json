@@ -10,7 +10,8 @@
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:migrate:reset": "prisma migrate reset --force",
-    "seed:artists": "tsx scripts/seed-artists.ts"
+    "seed:artists": "tsx scripts/seed-artists.ts",
+    "seed:top-tracks": "tsx scripts/seed-top-tracks.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.1.0",
