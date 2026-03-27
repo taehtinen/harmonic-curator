@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactElement } from "react";
 import type { Artist } from "@prisma/client";
 
 type SortColumn = "name" | "spotifyId" | "popularity" | "followers";
@@ -17,7 +18,7 @@ export default function ArtistsTable({
   artists: Artist[];
   panelOpen: boolean;
   selectedArtistId?: string;
-  sortArrow: (col: SortColumn) => JSX.Element | null;
+  sortArrow: (col: SortColumn) => ReactElement | null;
   nameSortHref: string;
   spotifySortHref: string;
   popularitySortHref: string;

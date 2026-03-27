@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser, userIsAdmin } from "@/lib/auth";
 import ArtistsTable from "@/components/artists-table";
 import ArtistSidebar from "@/components/artist-sidebar";
 
@@ -53,14 +55,17 @@ export default async function Artists({
   const sort = parseSort(sortParam);
   const order = parseOrder(orderParam);
   const skip = (page - 1) * ARTISTS_PER_PAGE;
+  const currentUser = await getCurrentUser();
+  const canIgnoreArtists = userIsAdmin(currentUser);
 
   const [artists, total] = await Promise.all([
     prisma.artist.findMany({
+      where: { isIgnored: false },
       orderBy: { [sort]: order },
       take: ARTISTS_PER_PAGE,
       skip,
     }),
-    prisma.artist.count(),
+    prisma.artist.count({ where: { isIgnored: false } }),
   ]);
 
   const totalPages = Math.ceil(total / ARTISTS_PER_PAGE);
@@ -86,6 +91,29 @@ export default async function Artists({
     ? artists.find((artist) => artist.id.toString() === artistParam)
     : null;
   const panelOpen = Boolean(selectedArtist);
+  const closeArtistHref = buildArtistsUrl({ page, sort, order });
+
+  async function ignoreArtist(formData: FormData) {
+    "use server";
+
+    const user = await getCurrentUser();
+    if (!userIsAdmin(user)) {
+      throw new Error("Only admins can ignore artists.");
+    }
+
+    const artistIdValue = formData.get("artistId");
+    const returnToValue = formData.get("returnTo");
+    if (typeof artistIdValue !== "string" || typeof returnToValue !== "string") {
+      throw new Error("Invalid ignore request payload.");
+    }
+
+    await prisma.artist.update({
+      where: { id: BigInt(artistIdValue) },
+      data: { isIgnored: true },
+    });
+
+    redirect(returnToValue);
+  }
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-zinc-50 font-sans dark:bg-black">
@@ -137,7 +165,10 @@ export default async function Artists({
           {selectedArtist && (
             <ArtistSidebar
               artist={selectedArtist}
-              closeHref={buildArtistsUrl({ page, sort, order })}
+              closeHref={closeArtistHref}
+              canIgnore={canIgnoreArtists}
+              ignoreAction={ignoreArtist}
+              returnToHref={closeArtistHref}
             />
           )}
         </div>

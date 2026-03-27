@@ -19,6 +19,7 @@ model Artist {
   genres       String[]
   popularity   Int
   followers    Int
+  isIgnored    Boolean  @default(false)
   topTracksRefreshedAt DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
