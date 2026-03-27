@@ -90,6 +90,21 @@ export default async function Artists({
   const selectedArtist = artistParam
     ? artists.find((artist) => artist.id.toString() === artistParam)
     : null;
+  const selectedArtistWithTracks = selectedArtist
+    ? await prisma.artist.findUnique({
+        where: { id: selectedArtist.id },
+        include: {
+          tracks: {
+            include: { album: true },
+            orderBy: [{ album: { releaseDate: "desc" } }, { trackNumber: "asc" }],
+          },
+          albums: {
+            include: { _count: { select: { tracks: true } } },
+            orderBy: [{ releaseDate: "desc" }, { name: "asc" }],
+          },
+        },
+      })
+    : null;
   const panelOpen = Boolean(selectedArtist);
   const closeArtistHref = buildArtistsUrl({ page, sort, order });
 
@@ -162,9 +177,9 @@ export default async function Artists({
             }
           />
 
-          {selectedArtist && (
+          {selectedArtistWithTracks && (
             <ArtistSidebar
-              artist={selectedArtist}
+              artist={selectedArtistWithTracks}
               closeHref={closeArtistHref}
               canIgnore={canIgnoreArtists}
               ignoreAction={ignoreArtist}
