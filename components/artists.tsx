@@ -28,13 +28,16 @@ function buildArtistsUrl(params: {
   sort: SortColumn;
   order: SortOrder;
   artistId?: string;
+  q?: string;
 }) {
-  const { page, sort, order, artistId } = params;
+  const { page, sort, order, artistId, q } = params;
   const sp = new URLSearchParams();
   sp.set("sort", sort);
   sp.set("order", order);
   if (page > 1) sp.set("page", String(page));
   if (artistId) sp.set("artist", artistId);
+  const trimmedQ = q?.trim();
+  if (trimmedQ) sp.set("q", trimmedQ);
   const qs = sp.toString();
   return qs ? `/?${qs}` : "/";
 }
@@ -47,28 +50,45 @@ export default async function Artists({
     sort?: string;
     order?: string;
     artist?: string;
+    q?: string;
   }>;
 }) {
-  const { page: pageParam, sort: sortParam, order: orderParam, artist: artistParam } =
-    await searchParams;
-  const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
+  const {
+    page: pageParam,
+    sort: sortParam,
+    order: orderParam,
+    artist: artistParam,
+    q: qParam,
+  } = await searchParams;
+  const q = (qParam ?? "").trim();
   const sort = parseSort(sortParam);
   const order = parseOrder(orderParam);
-  const skip = (page - 1) * ARTISTS_PER_PAGE;
+  const rawPage = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
   const currentUser = await getCurrentUser();
   const canIgnoreArtists = userIsAdmin(currentUser);
 
-  const [artists, total] = await Promise.all([
-    prisma.artist.findMany({
-      where: { isIgnored: false },
-      orderBy: { [sort]: order },
-      take: ARTISTS_PER_PAGE,
-      skip,
-    }),
-    prisma.artist.count({ where: { isIgnored: false } }),
-  ]);
+  const listWhere = {
+    isIgnored: false as const,
+    ...(q
+      ? {
+          name: {
+            contains: q,
+            mode: "insensitive" as const,
+          },
+        }
+      : {}),
+  };
 
+  const total = await prisma.artist.count({ where: listWhere });
   const totalPages = Math.ceil(total / ARTISTS_PER_PAGE);
+  const page = Math.min(rawPage, Math.max(1, totalPages));
+  const skip = (page - 1) * ARTISTS_PER_PAGE;
+  const artists = await prisma.artist.findMany({
+    where: listWhere,
+    orderBy: { [sort]: order },
+    take: ARTISTS_PER_PAGE,
+    skip,
+  });
   const hasPrev = page > 1;
   const hasNext = page < totalPages;
 
@@ -106,7 +126,7 @@ export default async function Artists({
       })
     : null;
   const panelOpen = Boolean(selectedArtist);
-  const closeArtistHref = buildArtistsUrl({ page, sort, order });
+  const closeArtistHref = buildArtistsUrl({ page, sort, order, q });
 
   async function ignoreArtist(formData: FormData) {
     "use server";
@@ -186,30 +206,43 @@ export default async function Artists({
               artists={artists}
               panelOpen={panelOpen}
               selectedArtistId={selectedArtist?.id.toString()}
+              sort={sort}
+              order={order}
+              searchQuery={q}
+              clearSearchHref={buildArtistsUrl({
+                page: 1,
+                sort,
+                order,
+                artistId: selectedArtist?.id.toString(),
+              })}
               sortArrow={sortArrow}
               nameSortHref={buildArtistsUrl({
                 page: pageForSort("name"),
                 sort: "name",
                 order: nextOrder("name"),
                 artistId: selectedArtist?.id.toString(),
+                q,
               })}
               spotifySortHref={buildArtistsUrl({
                 page: pageForSort("spotifyId"),
                 sort: "spotifyId",
                 order: nextOrder("spotifyId"),
                 artistId: selectedArtist?.id.toString(),
+                q,
               })}
               popularitySortHref={buildArtistsUrl({
                 page: pageForSort("popularity"),
                 sort: "popularity",
                 order: nextOrder("popularity"),
                 artistId: selectedArtist?.id.toString(),
+                q,
               })}
               followersSortHref={buildArtistsUrl({
                 page: pageForSort("followers"),
                 sort: "followers",
                 order: nextOrder("followers"),
                 artistId: selectedArtist?.id.toString(),
+                q,
               })}
               getRowHref={(artistId) =>
                 buildArtistsUrl({
@@ -217,6 +250,7 @@ export default async function Artists({
                   sort,
                   order,
                   artistId,
+                  q,
                 })
               }
             />
@@ -234,6 +268,7 @@ export default async function Artists({
                         sort,
                         order,
                         artistId: selectedArtist?.id.toString(),
+                        q,
                       })}
                       className="rounded-lg border border-zinc-200 bg-white px-3 py-2 font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
                     >
@@ -247,6 +282,7 @@ export default async function Artists({
                         sort,
                         order,
                         artistId: selectedArtist?.id.toString(),
+                        q,
                       })}
                       className="rounded-lg border border-zinc-200 bg-white px-3 py-2 font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
                     >
@@ -272,6 +308,7 @@ export default async function Artists({
                 sort,
                 order,
                 artistId: selectedArtistWithTracks.id.toString(),
+                q,
               })}
             />
           )}
