@@ -1,5 +1,6 @@
 import Link from "next/link";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
+import ArtistSidebarAddGenre from "@/components/artist-sidebar-add-genre";
 import type { ArtistWithSidebarData } from "@/components/artist-sidebar-types";
 
 export default function ArtistSidebarDetails({
@@ -8,12 +9,18 @@ export default function ArtistSidebarDetails({
   canIgnore,
   ignoreAction,
   returnToHref,
+  canAddGenre,
+  addGenreAction,
+  addGenreReturnToHref,
 }: {
   artist: ArtistWithSidebarData;
   closeHref: string;
   canIgnore: boolean;
   ignoreAction: (formData: FormData) => Promise<void>;
   returnToHref: string;
+  canAddGenre: boolean;
+  addGenreAction: (formData: FormData) => Promise<void>;
+  addGenreReturnToHref: string;
 }) {
   return (
     <section className="flex h-1/2 min-h-0 flex-col overflow-auto p-5">
@@ -65,25 +72,43 @@ export default function ArtistSidebarDetails({
         <dd>{artist.followers.toLocaleString()}</dd>
 
         <dt className="text-zinc-500 dark:text-zinc-400">Genres</dt>
-        <dd>
-          <span className="inline-flex items-center gap-1.5">
-            {artist.genres.length === 0 && (
-              <span
-                className="inline-flex shrink-0 text-amber-600 dark:text-amber-500"
-                title="No genres"
-                aria-hidden
-              >
-                <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
+        <dd className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            {artist.genres.length === 0 ? (
+              <span className="inline-flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400">
+                <span
+                  className="inline-flex shrink-0 text-amber-600 dark:text-amber-500"
+                  title="No genres"
+                  aria-hidden
+                >
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </span>
+                No genres listed
               </span>
+            ) : (
+              artist.genres.map((genre, index) => (
+                <span
+                  key={`${genre}-${index}`}
+                  className="inline-flex max-w-full items-center rounded-full border border-zinc-200 bg-zinc-100/80 px-2.5 py-0.5 text-xs font-medium text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-200"
+                >
+                  <span className="truncate">{genre}</span>
+                </span>
+              ))
             )}
-            {artist.genres.length > 0 ? artist.genres.join(", ") : "No genres listed"}
-          </span>
+            {canAddGenre && (
+              <ArtistSidebarAddGenre
+                artistId={artist.id.toString()}
+                addGenreAction={addGenreAction}
+                addGenreReturnToHref={addGenreReturnToHref}
+              />
+            )}
+          </div>
         </dd>
       </dl>
     </section>
