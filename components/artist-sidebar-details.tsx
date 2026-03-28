@@ -65,7 +65,26 @@ export default function ArtistSidebarDetails({
         <dd>{artist.followers.toLocaleString()}</dd>
 
         <dt className="text-zinc-500 dark:text-zinc-400">Genres</dt>
-        <dd>{artist.genres.length > 0 ? artist.genres.join(", ") : "No genres listed"}</dd>
+        <dd>
+          <span className="inline-flex items-center gap-1.5">
+            {artist.genres.length === 0 && (
+              <span
+                className="inline-flex shrink-0 text-amber-600 dark:text-amber-500"
+                title="No genres"
+                aria-hidden
+              >
+                <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </span>
+            )}
+            {artist.genres.length > 0 ? artist.genres.join(", ") : "No genres listed"}
+          </span>
+        </dd>
       </dl>
     </section>
   );
