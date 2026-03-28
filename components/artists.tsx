@@ -194,12 +194,8 @@ export default async function Artists({
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-zinc-50 font-sans dark:bg-black">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-zinc-50 font-sans dark:bg-black">
       <main className="flex min-h-0 w-full max-w-none flex-1 flex-col gap-4 overflow-hidden bg-white px-6 py-4 text-zinc-900 dark:bg-black dark:text-zinc-50">
-        <header className="flex shrink-0 flex-col gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight">Artists</h1>
-        </header>
-
         <div className="flex min-h-0 flex-1 gap-4 overflow-hidden">
           <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-hidden">
             <ArtistsTable
