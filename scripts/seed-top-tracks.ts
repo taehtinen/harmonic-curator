@@ -1,6 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import { SpotifyClient } from "@/lib/spotifyClient";
 
+function normalizeSpotifyArtistId(raw: string): string {
+  const s = raw.trim();
+  const uri = /^spotify:artist:(.+)$/.exec(s);
+  if (uri) return uri[1];
+  const openUrl = /open\.spotify\.com\/artist\/([^/?#]+)/.exec(s);
+  if (openUrl) return openUrl[1];
+  return s;
+}
+
 // Controls how many artists are refreshed per run.
 // Set `SEED_TOP_TRACKS_BATCH` to a positive integer to override the default.
 function getBatchSize(): number {
@@ -13,25 +22,45 @@ function getBatchSize(): number {
 async function main() {
   const spotifyClient = new SpotifyClient();
   const batchSize = getBatchSize();
-  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const targetedRaw = process.argv[2];
 
-  const neverRefreshed = await prisma.artist.findMany({
-    where: { topTracksRefreshedAt: null },
-    take: batchSize,
-    orderBy: { createdAt: "asc" },
-    select: { id: true, spotifyId: true },
-  });
+  let artists: { id: string; spotifyId: string }[];
 
-  let artists = neverRefreshed;
-  if (artists.length < batchSize) {
-    const remainder = batchSize - artists.length;
-    const moreStale = await prisma.artist.findMany({
-      where: { topTracksRefreshedAt: { lte: cutoff } },
-      take: remainder,
-      orderBy: { topTracksRefreshedAt: "asc" },
+  if (targetedRaw) {
+    const spotifyId = normalizeSpotifyArtistId(targetedRaw);
+    const one = await prisma.artist.findUnique({
+      where: { spotifyId },
       select: { id: true, spotifyId: true },
     });
-    artists = artists.concat(moreStale);
+    if (!one) {
+      console.error(
+        `No artist in DB with spotifyId=${spotifyId}. Seed the artist first (e.g. scripts/seed-artist.ts).`,
+      );
+      process.exitCode = 1;
+      return;
+    }
+    artists = [one];
+  } else {
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    const neverRefreshed = await prisma.artist.findMany({
+      where: { topTracksRefreshedAt: null },
+      take: batchSize,
+      orderBy: { createdAt: "asc" },
+      select: { id: true, spotifyId: true },
+    });
+
+    artists = neverRefreshed;
+    if (artists.length < batchSize) {
+      const remainder = batchSize - artists.length;
+      const moreStale = await prisma.artist.findMany({
+        where: { topTracksRefreshedAt: { lte: cutoff } },
+        take: remainder,
+        orderBy: { topTracksRefreshedAt: "asc" },
+        select: { id: true, spotifyId: true },
+      });
+      artists = artists.concat(moreStale);
+    }
   }
 
   if (artists.length === 0) {
