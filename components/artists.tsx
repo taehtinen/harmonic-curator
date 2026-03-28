@@ -138,44 +138,82 @@ export default async function Artists({
         </header>
 
         <div className="flex min-h-0 flex-1 gap-4 overflow-hidden">
-          <ArtistsTable
-            artists={artists}
-            panelOpen={panelOpen}
-            selectedArtistId={selectedArtist?.id.toString()}
-            sortArrow={sortArrow}
-            nameSortHref={buildArtistsUrl({
-              page: pageForSort("name"),
-              sort: "name",
-              order: nextOrder("name"),
-              artistId: selectedArtist?.id.toString(),
-            })}
-            spotifySortHref={buildArtistsUrl({
-              page: pageForSort("spotifyId"),
-              sort: "spotifyId",
-              order: nextOrder("spotifyId"),
-              artistId: selectedArtist?.id.toString(),
-            })}
-            popularitySortHref={buildArtistsUrl({
-              page: pageForSort("popularity"),
-              sort: "popularity",
-              order: nextOrder("popularity"),
-              artistId: selectedArtist?.id.toString(),
-            })}
-            followersSortHref={buildArtistsUrl({
-              page: pageForSort("followers"),
-              sort: "followers",
-              order: nextOrder("followers"),
-              artistId: selectedArtist?.id.toString(),
-            })}
-            getRowHref={(artistId) =>
-              buildArtistsUrl({
-                page,
-                sort,
-                order,
-                artistId,
-              })
-            }
-          />
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-hidden">
+            <ArtistsTable
+              artists={artists}
+              panelOpen={panelOpen}
+              selectedArtistId={selectedArtist?.id.toString()}
+              sortArrow={sortArrow}
+              nameSortHref={buildArtistsUrl({
+                page: pageForSort("name"),
+                sort: "name",
+                order: nextOrder("name"),
+                artistId: selectedArtist?.id.toString(),
+              })}
+              spotifySortHref={buildArtistsUrl({
+                page: pageForSort("spotifyId"),
+                sort: "spotifyId",
+                order: nextOrder("spotifyId"),
+                artistId: selectedArtist?.id.toString(),
+              })}
+              popularitySortHref={buildArtistsUrl({
+                page: pageForSort("popularity"),
+                sort: "popularity",
+                order: nextOrder("popularity"),
+                artistId: selectedArtist?.id.toString(),
+              })}
+              followersSortHref={buildArtistsUrl({
+                page: pageForSort("followers"),
+                sort: "followers",
+                order: nextOrder("followers"),
+                artistId: selectedArtist?.id.toString(),
+              })}
+              getRowHref={(artistId) =>
+                buildArtistsUrl({
+                  page,
+                  sort,
+                  order,
+                  artistId,
+                })
+              }
+            />
+
+            {totalPages > 1 && (
+              <nav className="flex shrink-0 items-center justify-between gap-4 text-sm">
+                <span className="text-zinc-500 dark:text-zinc-400">
+                  Page {page} of {totalPages} · {total.toLocaleString()} artists
+                </span>
+                <div className="flex gap-2">
+                  {hasPrev && (
+                    <Link
+                      href={buildArtistsUrl({
+                        page: page - 1,
+                        sort,
+                        order,
+                        artistId: selectedArtist?.id.toString(),
+                      })}
+                      className="rounded-lg border border-zinc-200 bg-white px-3 py-2 font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                    >
+                      Previous
+                    </Link>
+                  )}
+                  {hasNext && (
+                    <Link
+                      href={buildArtistsUrl({
+                        page: page + 1,
+                        sort,
+                        order,
+                        artistId: selectedArtist?.id.toString(),
+                      })}
+                      className="rounded-lg border border-zinc-200 bg-white px-3 py-2 font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                    >
+                      Next
+                    </Link>
+                  )}
+                </div>
+              </nav>
+            )}
+          </div>
 
           {selectedArtistWithTracks && (
             <ArtistSidebar
@@ -187,42 +225,6 @@ export default async function Artists({
             />
           )}
         </div>
-
-        {totalPages > 1 && (
-          <nav className="flex shrink-0 items-center justify-between gap-4 text-sm">
-            <span className="text-zinc-500 dark:text-zinc-400">
-              Page {page} of {totalPages} · {total.toLocaleString()} artists
-            </span>
-            <div className="flex gap-2">
-              {hasPrev && (
-                <Link
-                  href={buildArtistsUrl({
-                    page: page - 1,
-                    sort,
-                    order,
-                    artistId: selectedArtist?.id.toString(),
-                  })}
-                  className="rounded-lg border border-zinc-200 bg-white px-3 py-2 font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                >
-                  Previous
-                </Link>
-              )}
-              {hasNext && (
-                <Link
-                  href={buildArtistsUrl({
-                    page: page + 1,
-                    sort,
-                    order,
-                    artistId: selectedArtist?.id.toString(),
-                  })}
-                  className="rounded-lg border border-zinc-200 bg-white px-3 py-2 font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                >
-                  Next
-                </Link>
-              )}
-            </div>
-          </nav>
-        )}
       </main>
     </div>
   );
