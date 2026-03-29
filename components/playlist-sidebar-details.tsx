@@ -16,9 +16,13 @@ function formatDateTimeOrDash(value: Date | null) {
 export default function PlaylistSidebarDetails({
   playlist,
   closeHref,
+  generatePlaylistAction,
+  generatePlaylistReturnToHref,
 }: {
   playlist: Playlist;
   closeHref: string;
+  generatePlaylistAction: (formData: FormData) => Promise<void>;
+  generatePlaylistReturnToHref: string;
 }) {
   return (
     <section className="shrink-0 p-5">
@@ -96,6 +100,18 @@ export default function PlaylistSidebarDetails({
             <dd className="mt-0.5 tabular-nums text-zinc-800 dark:text-zinc-200">
               {formatDateTime(playlist.updatedAt)}
             </dd>
+          </div>
+          <div>
+            <form action={generatePlaylistAction} className="mt-1">
+              <input type="hidden" name="playlistId" value={playlist.id.toString()} />
+              <input type="hidden" name="returnTo" value={generatePlaylistReturnToHref} />
+              <button
+                type="submit"
+                className="w-full rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              >
+                Generate playlist
+              </button>
+            </form>
           </div>
           <div>
             <dt className="text-zinc-500 dark:text-zinc-400">Last track edit</dt>

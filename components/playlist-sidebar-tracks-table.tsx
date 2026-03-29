@@ -23,7 +23,7 @@ export default function PlaylistSidebarTracksTable({
               Artist
             </th>
             <th scope="col" className="px-3 py-2">
-              Album
+              Release date
             </th>
             <th scope="col" className="px-3 py-2 text-right">
               Pop.
@@ -54,8 +54,8 @@ export default function PlaylistSidebarTracksTable({
                   <td className="max-w-[10rem] truncate px-3 py-2 text-zinc-700 dark:text-zinc-300">
                     {t.artist.name}
                   </td>
-                  <td className="max-w-[10rem] truncate px-3 py-2 text-zinc-600 dark:text-zinc-400">
-                    {t.album.name}
+                  <td className="max-w-[10rem] truncate px-3 py-2 tabular-nums text-zinc-600 dark:text-zinc-400">
+                    {t.album.releaseDate}
                   </td>
                   <td className="px-3 py-2 text-right tabular-nums text-zinc-600 dark:text-zinc-400">
                     {t.popularity}

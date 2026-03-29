@@ -1,5 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser, userIsAdmin } from "@/lib/auth";
+import { replacePlaylistTracksFromDbCriteria } from "@/lib/playlist-generate-from-criteria";
 import PlaylistSidebar from "@/components/playlist-sidebar";
 import PlaylistsTable from "@/components/playlists-table";
 import {
@@ -94,7 +97,7 @@ export default async function Playlists({
               track: {
                 include: {
                   artist: { select: { id: true, name: true } },
-                  album: { select: { name: true } },
+                  album: { select: { releaseDate: true } },
                 },
               },
             },
@@ -106,6 +109,35 @@ export default async function Playlists({
   const panelOpen = Boolean(selectedPlaylist);
   const openPlaylistId = selectedPlaylist?.id.toString();
   const closePlaylistHref = buildPlaylistsUrl({ page, sort, order, q });
+  const playlistPanelReturnToHref = buildPlaylistsUrl({
+    page,
+    sort,
+    order,
+    playlistId: openPlaylistId,
+    q,
+  });
+
+  async function generatePlaylistFromCriteria(formData: FormData) {
+    "use server";
+
+    const user = await getCurrentUser();
+    if (!userIsAdmin(user)) {
+      throw new Error("Only admins can generate playlists.");
+    }
+
+    const playlistIdValue = formData.get("playlistId");
+    const returnToValue = formData.get("returnTo");
+    if (typeof playlistIdValue !== "string" || typeof returnToValue !== "string") {
+      throw new Error("Invalid generate playlist request payload.");
+    }
+
+    if (!/^\d+$/.test(playlistIdValue)) {
+      throw new Error("Invalid playlist id.");
+    }
+
+    await replacePlaylistTracksFromDbCriteria(BigInt(playlistIdValue));
+    redirect(returnToValue);
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-zinc-50 font-sans dark:bg-black">
@@ -209,7 +241,12 @@ export default async function Playlists({
           </div>
 
           {selectedPlaylist && (
-            <PlaylistSidebar playlist={selectedPlaylist} closeHref={closePlaylistHref} />
+            <PlaylistSidebar
+              playlist={selectedPlaylist}
+              closeHref={closePlaylistHref}
+              generatePlaylistAction={generatePlaylistFromCriteria}
+              generatePlaylistReturnToHref={playlistPanelReturnToHref}
+            />
           )}
         </div>
       </main>
