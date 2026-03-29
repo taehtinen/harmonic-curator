@@ -1,40 +1,26 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import PlaylistSidebar from "@/components/playlist-sidebar";
 import PlaylistsTable from "@/components/playlists-table";
+import {
+  buildPlaylistsUrl,
+  type PlaylistsListOrder,
+  type PlaylistsListSort,
+} from "@/lib/playlists-url";
 
 const PLAYLISTS_PER_PAGE = 100;
 
-type SortColumn = "name" | "spotifyId" | "maxFollowers" | "size";
-type SortOrder = "asc" | "desc";
+const SORT_COLUMNS: PlaylistsListSort[] = ["name", "spotifyId", "maxFollowers", "size"];
 
-const SORT_COLUMNS: SortColumn[] = ["name", "spotifyId", "maxFollowers", "size"];
-
-function parseSort(sortParam: string | undefined): SortColumn {
-  if (sortParam && SORT_COLUMNS.includes(sortParam as SortColumn))
-    return sortParam as SortColumn;
+function parseSort(sortParam: string | undefined): PlaylistsListSort {
+  if (sortParam && SORT_COLUMNS.includes(sortParam as PlaylistsListSort))
+    return sortParam as PlaylistsListSort;
   return "name";
 }
 
-function parseOrder(orderParam: string | undefined): SortOrder {
+function parseOrder(orderParam: string | undefined): PlaylistsListOrder {
   if (orderParam === "asc" || orderParam === "desc") return orderParam;
   return "asc";
-}
-
-function buildPlaylistsUrl(params: {
-  page: number;
-  sort: SortColumn;
-  order: SortOrder;
-  q?: string;
-}) {
-  const { page, sort, order, q } = params;
-  const sp = new URLSearchParams();
-  sp.set("sort", sort);
-  sp.set("order", order);
-  if (page > 1) sp.set("page", String(page));
-  const trimmedQ = q?.trim();
-  if (trimmedQ) sp.set("q", trimmedQ);
-  const qs = sp.toString();
-  return qs ? `/playlists?${qs}` : "/playlists";
 }
 
 export default async function Playlists({
@@ -45,6 +31,7 @@ export default async function Playlists({
     sort?: string;
     order?: string;
     q?: string;
+    playlist?: string;
   }>;
 }) {
   const {
@@ -52,6 +39,7 @@ export default async function Playlists({
     sort: sortParam,
     order: orderParam,
     q: qParam,
+    playlist: playlistParam,
   } = await searchParams;
   const q = (qParam ?? "").trim();
   const sort = parseSort(sortParam);
@@ -80,19 +68,31 @@ export default async function Playlists({
   const hasPrev = page > 1;
   const hasNext = page < totalPages;
 
-  function nextOrder(col: SortColumn): SortOrder {
+  function nextOrder(col: PlaylistsListSort): PlaylistsListOrder {
     if (col === sort) return order === "asc" ? "desc" : "asc";
     return col === "name" || col === "spotifyId" ? "asc" : "desc";
   }
 
-  function pageForSort(col: SortColumn) {
+  function pageForSort(col: PlaylistsListSort) {
     return col === sort ? page : 1;
   }
 
-  const sortArrow = (col: SortColumn) =>
+  const sortArrow = (col: PlaylistsListSort) =>
     sort === col ? (
       <span className="tabular-nums">{order === "asc" ? "↑" : "↓"}</span>
     ) : null;
+
+  const selectedPlaylistIdParam =
+    playlistParam && /^\d+$/.test(playlistParam) ? BigInt(playlistParam) : null;
+  const selectedPlaylist = selectedPlaylistIdParam
+    ? await prisma.playlist.findFirst({
+        where: { id: selectedPlaylistIdParam },
+      })
+    : null;
+
+  const panelOpen = Boolean(selectedPlaylist);
+  const openPlaylistId = selectedPlaylist?.id.toString();
+  const closePlaylistHref = buildPlaylistsUrl({ page, sort, order, q });
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-zinc-50 font-sans dark:bg-black">
@@ -100,78 +100,103 @@ export default async function Playlists({
         <header className="shrink-0">
           <h1 className="text-2xl font-semibold tracking-tight">Playlists</h1>
         </header>
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
-          <PlaylistsTable
-            playlists={playlists}
-            sort={sort}
-            order={order}
-            searchQuery={q}
-            clearSearchHref={buildPlaylistsUrl({
-              page: 1,
-              sort,
-              order,
-            })}
-            sortArrow={sortArrow}
-            nameSortHref={buildPlaylistsUrl({
-              page: pageForSort("name"),
-              sort: "name",
-              order: nextOrder("name"),
-              q,
-            })}
-            spotifySortHref={buildPlaylistsUrl({
-              page: pageForSort("spotifyId"),
-              sort: "spotifyId",
-              order: nextOrder("spotifyId"),
-              q,
-            })}
-            maxFollowersSortHref={buildPlaylistsUrl({
-              page: pageForSort("maxFollowers"),
-              sort: "maxFollowers",
-              order: nextOrder("maxFollowers"),
-              q,
-            })}
-            sizeSortHref={buildPlaylistsUrl({
-              page: pageForSort("size"),
-              sort: "size",
-              order: nextOrder("size"),
-              q,
-            })}
-          />
+        <div className="flex min-h-0 flex-1 gap-4 overflow-hidden">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-hidden">
+            <PlaylistsTable
+              playlists={playlists}
+              panelOpen={panelOpen}
+              selectedPlaylistId={openPlaylistId}
+              sort={sort}
+              order={order}
+              searchQuery={q}
+              clearSearchHref={buildPlaylistsUrl({
+                page: 1,
+                sort,
+                order,
+                playlistId: openPlaylistId,
+                q,
+              })}
+              sortArrow={sortArrow}
+              nameSortHref={buildPlaylistsUrl({
+                page: pageForSort("name"),
+                sort: "name",
+                order: nextOrder("name"),
+                playlistId: openPlaylistId,
+                q,
+              })}
+              spotifySortHref={buildPlaylistsUrl({
+                page: pageForSort("spotifyId"),
+                sort: "spotifyId",
+                order: nextOrder("spotifyId"),
+                playlistId: openPlaylistId,
+                q,
+              })}
+              maxFollowersSortHref={buildPlaylistsUrl({
+                page: pageForSort("maxFollowers"),
+                sort: "maxFollowers",
+                order: nextOrder("maxFollowers"),
+                playlistId: openPlaylistId,
+                q,
+              })}
+              sizeSortHref={buildPlaylistsUrl({
+                page: pageForSort("size"),
+                sort: "size",
+                order: nextOrder("size"),
+                playlistId: openPlaylistId,
+                q,
+              })}
+              getRowHref={(playlistId) =>
+                buildPlaylistsUrl({
+                  page,
+                  sort,
+                  order,
+                  playlistId,
+                  q,
+                })
+              }
+            />
 
-          {totalPages > 1 && (
-            <nav className="flex shrink-0 items-center justify-between gap-4 text-sm">
-              <span className="text-zinc-500 dark:text-zinc-400">
-                Page {page} of {totalPages} · {total.toLocaleString()} playlists
-              </span>
-              <div className="flex gap-2">
-                {hasPrev && (
-                  <Link
-                    href={buildPlaylistsUrl({
-                      page: page - 1,
-                      sort,
-                      order,
-                      q,
-                    })}
-                    className="rounded-lg border border-zinc-200 bg-white px-3 py-2 font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                  >
-                    Previous
-                  </Link>
-                )}
-                {hasNext && (
-                  <Link
-                    href={buildPlaylistsUrl({
-                      page: page + 1,
-                      sort,
-                      order,
-                      q,
-                    })}
-                    className="rounded-lg border border-zinc-200 bg-white px-3 py-2 font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                  >
-                    Next
-                  </Link>
-                )}
-              </div>
-            </nav>
+            {totalPages > 1 && (
+              <nav className="flex shrink-0 items-center justify-between gap-4 text-sm">
+                <span className="text-zinc-500 dark:text-zinc-400">
+                  Page {page} of {totalPages} · {total.toLocaleString()} playlists
+                </span>
+                <div className="flex gap-2">
+                  {hasPrev && (
+                    <Link
+                      href={buildPlaylistsUrl({
+                        page: page - 1,
+                        sort,
+                        order,
+                        playlistId: openPlaylistId,
+                        q,
+                      })}
+                      className="rounded-lg border border-zinc-200 bg-white px-3 py-2 font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                    >
+                      Previous
+                    </Link>
+                  )}
+                  {hasNext && (
+                    <Link
+                      href={buildPlaylistsUrl({
+                        page: page + 1,
+                        sort,
+                        order,
+                        playlistId: openPlaylistId,
+                        q,
+                      })}
+                      className="rounded-lg border border-zinc-200 bg-white px-3 py-2 font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                    >
+                      Next
+                    </Link>
+                  )}
+                </div>
+              </nav>
+            )}
+          </div>
+
+          {selectedPlaylist && (
+            <PlaylistSidebar playlist={selectedPlaylist} closeHref={closePlaylistHref} />
           )}
         </div>
       </main>

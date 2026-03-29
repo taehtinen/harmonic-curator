@@ -6,6 +6,8 @@ type SortColumn = "name" | "spotifyId" | "maxFollowers" | "size";
 
 export default function PlaylistsTable({
   playlists,
+  panelOpen,
+  selectedPlaylistId,
   sort,
   order,
   searchQuery,
@@ -15,8 +17,11 @@ export default function PlaylistsTable({
   spotifySortHref,
   maxFollowersSortHref,
   sizeSortHref,
+  getRowHref,
 }: {
   playlists: Playlist[];
+  panelOpen: boolean;
+  selectedPlaylistId?: string;
   sort: string;
   order: string;
   searchQuery: string;
@@ -26,8 +31,10 @@ export default function PlaylistsTable({
   spotifySortHref: string;
   maxFollowersSortHref: string;
   sizeSortHref: string;
+  getRowHref: (playlistId: string) => string;
 }) {
   const hasSearch = searchQuery.length > 0;
+  const emptyColSpan = panelOpen ? 4 : 6;
 
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50/80 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/60">
@@ -39,6 +46,9 @@ export default function PlaylistsTable({
         >
           <input type="hidden" name="sort" value={sort} />
           <input type="hidden" name="order" value={order} />
+          {selectedPlaylistId ? (
+            <input type="hidden" name="playlist" value={selectedPlaylistId} />
+          ) : null}
           <label htmlFor="playlists-name-search" className="sr-only">
             Search playlists by name
           </label>
@@ -89,8 +99,8 @@ export default function PlaylistsTable({
                   {sortArrow("spotifyId")}
                 </Link>
               </th>
-              <th className="px-4 py-3">Description</th>
-              <th className="px-4 py-3">Genres</th>
+              {!panelOpen && <th className="px-4 py-3">Description</th>}
+              {!panelOpen && <th className="px-4 py-3">Genres</th>}
               <th className="px-4 py-3 text-right">
                 <Link
                   href={maxFollowersSortHref}
@@ -115,7 +125,7 @@ export default function PlaylistsTable({
             {playlists.length === 0 ? (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={emptyColSpan}
                   className="px-4 py-10 text-center text-sm text-zinc-500 dark:text-zinc-400"
                 >
                   {hasSearch
@@ -126,63 +136,88 @@ export default function PlaylistsTable({
             ) : (
               playlists.map((playlist) => {
                 const playlistKey = playlist.id.toString();
+                const isSelected = selectedPlaylistId === playlistKey;
+                const rowHref = getRowHref(playlistKey);
+                const rowBaseClass =
+                  "block w-full px-4 py-3 hover:text-zinc-900 dark:hover:text-zinc-50";
 
                 return (
                   <tr
                     key={playlistKey}
-                    className="border-b border-zinc-100/80 last:border-0 hover:bg-zinc-100/60 dark:border-zinc-800/80 dark:hover:bg-zinc-900"
+                    className={`border-b border-zinc-100/80 last:border-0 dark:border-zinc-800/80 ${
+                      isSelected
+                        ? "bg-zinc-100 dark:bg-zinc-800/80"
+                        : "hover:bg-zinc-100/60 dark:hover:bg-zinc-900"
+                    }`}
                   >
-                    <td className="max-w-xs truncate px-4 py-3 font-medium">
-                      {playlist.name}
+                    <td className="max-w-xs truncate p-0 font-medium">
+                      <Link href={rowHref} className={`${rowBaseClass} truncate`}>
+                        {playlist.name}
+                      </Link>
                     </td>
-                    <td className="max-w-xs truncate px-4 py-3 text-xs text-zinc-500 dark:text-zinc-400">
-                      {playlist.spotifyId}
+                    <td className="max-w-xs truncate p-0 text-xs text-zinc-500 dark:text-zinc-400">
+                      <Link href={rowHref} className={`${rowBaseClass} truncate`}>
+                        {playlist.spotifyId}
+                      </Link>
                     </td>
-                    <td
-                      className="max-w-xs truncate px-4 py-3 text-zinc-600 dark:text-zinc-300"
-                      title={playlist.description || undefined}
-                    >
-                      {playlist.description || (
-                        <span className="text-zinc-400 dark:text-zinc-500">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-zinc-600 dark:text-zinc-300">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {playlist.genres.length === 0 ? (
+                    {!panelOpen && (
+                      <td
+                        className="max-w-xs truncate p-0 text-zinc-600 dark:text-zinc-300"
+                        title={playlist.description || undefined}
+                      >
+                        <Link href={rowHref} className={`${rowBaseClass} truncate`}>
+                          {playlist.description || (
+                            <span className="text-zinc-400 dark:text-zinc-500">—</span>
+                          )}
+                        </Link>
+                      </td>
+                    )}
+                    {!panelOpen && (
+                      <td className="p-0 text-xs text-zinc-600 dark:text-zinc-300">
+                        <Link
+                          href={rowHref}
+                          className={`${rowBaseClass} flex flex-wrap items-center gap-1.5`}
+                        >
+                          {playlist.genres.length === 0 ? (
+                            <span
+                              className="text-zinc-400 dark:text-zinc-500"
+                              title="No genres"
+                              aria-label="No genres"
+                            >
+                              —
+                            </span>
+                          ) : (
+                            playlist.genres.map((genre, index) => (
+                              <span
+                                key={`${playlistKey}-${genre}-${index}`}
+                                className="inline-flex max-w-full items-center rounded-full border border-zinc-200 bg-zinc-100/80 px-2.5 py-0.5 text-xs font-medium text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-200"
+                              >
+                                <span className="truncate">{genre}</span>
+                              </span>
+                            ))
+                          )}
+                        </Link>
+                      </td>
+                    )}
+                    <td className="p-0 text-right tabular-nums">
+                      <Link href={rowHref} className={rowBaseClass}>
+                        {playlist.maxFollowers == null ? (
                           <span
                             className="text-zinc-400 dark:text-zinc-500"
-                            title="No genres"
-                            aria-label="No genres"
+                            title="No follower limit"
+                            aria-label="No follower limit"
                           >
                             —
                           </span>
                         ) : (
-                          playlist.genres.map((genre, index) => (
-                            <span
-                              key={`${playlistKey}-${genre}-${index}`}
-                              className="inline-flex max-w-full items-center rounded-full border border-zinc-200 bg-zinc-100/80 px-2.5 py-0.5 text-xs font-medium text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-200"
-                            >
-                              <span className="truncate">{genre}</span>
-                            </span>
-                          ))
+                          playlist.maxFollowers.toLocaleString()
                         )}
-                      </div>
+                      </Link>
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
-                      {playlist.maxFollowers == null ? (
-                        <span
-                          className="text-zinc-400 dark:text-zinc-500"
-                          title="No follower limit"
-                          aria-label="No follower limit"
-                        >
-                          —
-                        </span>
-                      ) : (
-                        playlist.maxFollowers.toLocaleString()
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
-                      {playlist.size.toLocaleString()}
+                    <td className="p-0 text-right tabular-nums">
+                      <Link href={rowHref} className={rowBaseClass}>
+                        {playlist.size.toLocaleString()}
+                      </Link>
                     </td>
                   </tr>
                 );
