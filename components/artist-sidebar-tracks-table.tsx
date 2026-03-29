@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SpotifyIcon from "@/components/spotify-icon";
 import type { ArtistSidebarFeatTrackRow, ArtistSidebarTrackRow } from "@/components/artist-sidebar-types";
 import { buildArtistsUrl, type ArtistsHrefContext } from "@/lib/artists-url";
 
@@ -59,7 +60,18 @@ export default function ArtistSidebarTracksTable({
             return (
             <tr key={track.id.toString()}>
               <td className="max-w-[16rem] px-3 py-2">
-                <div className="truncate font-medium">{track.name}</div>
+                <div className="min-w-0">
+                  <a
+                    href={`https://open.spotify.com/track/${track.spotifyId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={`Open “${track.name}” on Spotify`}
+                    className="inline-flex min-w-0 max-w-full items-center gap-1.5 font-medium text-zinc-900 underline-offset-2 hover:text-blue-600 hover:underline dark:text-zinc-50 dark:hover:text-blue-400"
+                  >
+                    <span className="truncate">{track.name}</span>
+                    <SpotifyIcon className="h-3.5 w-3.5 shrink-0 opacity-90" />
+                  </a>
+                </div>
                 {primaryArtist ? (
                   <div className="mt-0.5 min-w-0 text-xs font-normal text-zinc-500 dark:text-zinc-400">
                     <span className="whitespace-nowrap">by </span>
@@ -94,8 +106,17 @@ export default function ArtistSidebarTracksTable({
                   </div>
                 ) : null}
               </td>
-              <td className="max-w-[14rem] truncate px-3 py-2 text-zinc-600 dark:text-zinc-400">
-                {track.album.name}
+              <td className="max-w-[14rem] px-3 py-2">
+                <a
+                  href={`https://open.spotify.com/album/${track.album.spotifyId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={`Open “${track.album.name}” on Spotify`}
+                  className="inline-flex min-w-0 max-w-full items-center gap-1.5 text-zinc-600 underline-offset-2 hover:text-blue-600 hover:underline dark:text-zinc-400 dark:hover:text-blue-400"
+                >
+                  <span className="truncate">{track.album.name}</span>
+                  <SpotifyIcon className="h-3.5 w-3.5 shrink-0 opacity-90" />
+                </a>
               </td>
               <td className="whitespace-nowrap px-3 py-2 text-zinc-600 dark:text-zinc-400">
                 {track.album.releaseDate}

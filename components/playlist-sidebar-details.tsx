@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SpotifyIcon from "@/components/spotify-icon";
 import type { Playlist } from "@prisma/client";
 
 function formatDateTime(value: Date) {
@@ -34,13 +35,11 @@ export default function PlaylistSidebarDetails({
             href={`https://open.spotify.com/playlist/${playlist.spotifyId}`}
             target="_blank"
             rel="noopener noreferrer"
+            title="Open playlist on Spotify"
             className="inline-flex items-center gap-1 text-blue-600 underline-offset-2 hover:underline dark:text-blue-400"
           >
             {playlist.spotifyId}
-            <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3">
-              <path d="M5 6a1 1 0 0 1 1-1h5a1 1 0 1 1 0 2H8.414l6.293 6.293a1 1 0 0 1-1.414 1.414L7 8.414V11a1 1 0 1 1-2 0V6Z" />
-              <path d="M5 9a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1Z" />
-            </svg>
+            <SpotifyIcon className="h-3 w-3 shrink-0 opacity-90" />
           </a>
         </dd>
 

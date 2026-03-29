@@ -1,3 +1,4 @@
+import SpotifyIcon from "@/components/spotify-icon";
 import type { PlaylistSidebarTrackRow } from "@/components/playlist-sidebar-types";
 
 export default function PlaylistSidebarTracksTable({
@@ -43,9 +44,11 @@ export default function PlaylistSidebarTracksTable({
                       href={`https://open.spotify.com/track/${t.spotifyId}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block truncate font-medium text-zinc-900 underline-offset-2 hover:text-blue-600 hover:underline dark:text-zinc-50 dark:hover:text-blue-400"
+                      title={`Open “${t.name}” on Spotify`}
+                      className="inline-flex min-w-0 max-w-full items-center gap-1.5 font-medium text-zinc-900 underline-offset-2 hover:text-blue-600 hover:underline dark:text-zinc-50 dark:hover:text-blue-400"
                     >
-                      {t.name}
+                      <span className="truncate">{t.name}</span>
+                      <SpotifyIcon className="h-3.5 w-3.5 shrink-0 opacity-90" />
                     </a>
                   </td>
                   <td className="max-w-[10rem] truncate px-3 py-2 text-zinc-700 dark:text-zinc-300">

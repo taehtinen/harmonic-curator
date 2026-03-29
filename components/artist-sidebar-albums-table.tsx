@@ -1,3 +1,4 @@
+import SpotifyIcon from "@/components/spotify-icon";
 import type { ArtistWithSidebarData } from "@/components/artist-sidebar-types";
 
 export default function ArtistSidebarAlbumsTable({
@@ -24,7 +25,18 @@ export default function ArtistSidebarAlbumsTable({
         {albums.length > 0 ? (
           albums.map((album) => (
             <tr key={album.id.toString()}>
-              <td className="max-w-[16rem] truncate px-3 py-2 font-medium">{album.name}</td>
+              <td className="max-w-[16rem] px-3 py-2">
+                <a
+                  href={`https://open.spotify.com/album/${album.spotifyId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={`Open “${album.name}” on Spotify`}
+                  className="inline-flex min-w-0 max-w-full items-center gap-1.5 font-medium text-zinc-900 underline-offset-2 hover:text-blue-600 hover:underline dark:text-zinc-50 dark:hover:text-blue-400"
+                >
+                  <span className="truncate">{album.name}</span>
+                  <SpotifyIcon className="h-3.5 w-3.5 shrink-0 opacity-90" />
+                </a>
+              </td>
               <td className="whitespace-nowrap px-3 py-2 text-zinc-600 dark:text-zinc-400">
                 {album.releaseDate}
               </td>
