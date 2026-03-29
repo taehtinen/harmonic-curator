@@ -276,11 +276,6 @@ async function main() {
         })),
       });
     }
-
-    await tx.playlist.update({
-      where: { id: playlist!.id },
-      data: { size: resolvedTrackIds.length },
-    });
   });
 
   console.log(
