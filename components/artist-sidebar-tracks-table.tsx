@@ -1,3 +1,6 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import SpotifyIcon from "@/components/spotify-icon";
 import type { ArtistSidebarFeatTrackRow, ArtistSidebarTrackRow } from "@/components/artist-sidebar-types";
@@ -16,6 +19,38 @@ function collaboratorArtists(
   return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
+type SortColumn = "track" | "album" | "release" | "popularity";
+
+type SortState = { col: SortColumn; order: "asc" | "desc" };
+
+/** Matches Prisma `orderBy: [{ album: { releaseDate: "desc" } }, { trackNumber: "asc" }]`. */
+const DEFAULT_SORT: SortState = { col: "release", order: "desc" };
+
+function defaultOrder(col: SortColumn): "asc" | "desc" {
+  return col === "track" || col === "album" ? "asc" : "desc";
+}
+
+function compareTracks(
+  a: ArtistSidebarTrackRow,
+  b: ArtistSidebarTrackRow,
+  col: SortColumn,
+  order: "asc" | "desc"
+): number {
+  const dir = order === "asc" ? 1 : -1;
+  let cmp = 0;
+  if (col === "track") {
+    cmp = a.name.localeCompare(b.name);
+  } else if (col === "album") {
+    cmp = a.album.name.localeCompare(b.album.name);
+  } else if (col === "release") {
+    cmp = a.album.releaseDate.localeCompare(b.album.releaseDate);
+    if (cmp === 0) cmp = a.trackNumber - b.trackNumber;
+  } else {
+    cmp = a.popularity - b.popularity;
+  }
+  return cmp * dir;
+}
+
 export default function ArtistSidebarTracksTable({
   tracks,
   artistsHrefContext,
@@ -31,27 +66,79 @@ export default function ArtistSidebarTracksTable({
   excludeCollaboratorArtistId?: bigint;
   emptyMessage?: string;
 }) {
+  const [sort, setSort] = useState<SortState>(DEFAULT_SORT);
+
+  const sortedTracks = useMemo(() => {
+    if (tracks.length === 0) return tracks;
+    return [...tracks].sort((a, b) => compareTracks(a, b, sort.col, sort.order));
+  }, [tracks, sort]);
+
+  function onHeaderClick(col: SortColumn) {
+    setSort((prev) => {
+      if (prev.col === col) {
+        return { col, order: prev.order === "asc" ? "desc" : "asc" };
+      }
+      return { col, order: defaultOrder(col) };
+    });
+  }
+
+  const sortArrow = (col: SortColumn) =>
+    sort.col === col ? (
+      <span className="tabular-nums">{sort.order === "asc" ? "↑" : "↓"}</span>
+    ) : null;
+
+  const ariaSort = (col: SortColumn): "ascending" | "descending" | "none" =>
+    sort.col === col ? (sort.order === "asc" ? "ascending" : "descending") : "none";
+
   return (
     <table className="min-w-full divide-y divide-zinc-200 text-sm dark:divide-zinc-800">
-      <thead className="bg-zinc-100/80 text-left text-xs uppercase tracking-wide text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
+      <thead className="bg-zinc-100/80 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
         <tr>
-          <th scope="col" className="px-3 py-2">
-            Track
+          <th scope="col" aria-sort={ariaSort("track")} className="px-3 py-2">
+            <button
+              type="button"
+              onClick={() => onHeaderClick("track")}
+              className="flex w-full cursor-pointer select-none items-center justify-between gap-2 uppercase hover:text-zinc-700 dark:hover:text-zinc-200"
+            >
+              <span>Track</span>
+              {sortArrow("track")}
+            </button>
           </th>
-          <th scope="col" className="px-3 py-2">
-            Album
+          <th scope="col" aria-sort={ariaSort("album")} className="px-3 py-2">
+            <button
+              type="button"
+              onClick={() => onHeaderClick("album")}
+              className="flex w-full cursor-pointer select-none items-center justify-between gap-2 uppercase hover:text-zinc-700 dark:hover:text-zinc-200"
+            >
+              <span>Album</span>
+              {sortArrow("album")}
+            </button>
           </th>
-          <th scope="col" className="px-3 py-2">
-            Release
+          <th scope="col" aria-sort={ariaSort("release")} className="px-3 py-2">
+            <button
+              type="button"
+              onClick={() => onHeaderClick("release")}
+              className="flex w-full cursor-pointer select-none items-center justify-between gap-2 uppercase hover:text-zinc-700 dark:hover:text-zinc-200"
+            >
+              <span>Release</span>
+              {sortArrow("release")}
+            </button>
           </th>
-          <th scope="col" className="px-3 py-2 text-right">
-            Popularity
+          <th scope="col" aria-sort={ariaSort("popularity")} className="px-3 py-2 text-right">
+            <button
+              type="button"
+              onClick={() => onHeaderClick("popularity")}
+              className="flex w-full cursor-pointer select-none items-center justify-end gap-2 uppercase hover:text-zinc-700 dark:hover:text-zinc-200"
+            >
+              <span className="ml-auto">Popularity</span>
+              {sortArrow("popularity")}
+            </button>
           </th>
         </tr>
       </thead>
       <tbody className="divide-y divide-zinc-100 dark:divide-zinc-900">
-        {tracks.length > 0 ? (
-          tracks.map((track) => {
+        {sortedTracks.length > 0 ? (
+          sortedTracks.map((track) => {
             const feats = collaboratorArtists(track, excludeCollaboratorArtistId);
             const primaryArtist =
               creditLine === "primary"
