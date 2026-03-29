@@ -4,11 +4,16 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser, userIsAdmin } from "@/lib/auth";
 import ArtistsTable from "@/components/artists-table";
 import ArtistSidebar from "@/components/artist-sidebar";
+import {
+  buildArtistsUrl,
+  type ArtistsListOrder,
+  type ArtistsListSort,
+} from "@/lib/artists-url";
 
 const ARTISTS_PER_PAGE = 100;
 
-type SortColumn = "name" | "spotifyId" | "popularity" | "followers";
-type SortOrder = "asc" | "desc";
+type SortColumn = ArtistsListSort;
+type SortOrder = ArtistsListOrder;
 
 const SORT_COLUMNS: SortColumn[] = ["name", "spotifyId", "popularity", "followers"];
 
@@ -21,25 +26,6 @@ function parseSort(sortParam: string | undefined): SortColumn {
 function parseOrder(orderParam: string | undefined): SortOrder {
   if (orderParam === "asc" || orderParam === "desc") return orderParam;
   return "desc";
-}
-
-function buildArtistsUrl(params: {
-  page: number;
-  sort: SortColumn;
-  order: SortOrder;
-  artistId?: string;
-  q?: string;
-}) {
-  const { page, sort, order, artistId, q } = params;
-  const sp = new URLSearchParams();
-  sp.set("sort", sort);
-  sp.set("order", order);
-  if (page > 1) sp.set("page", String(page));
-  if (artistId) sp.set("artist", artistId);
-  const trimmedQ = q?.trim();
-  if (trimmedQ) sp.set("q", trimmedQ);
-  const qs = sp.toString();
-  return qs ? `/?${qs}` : "/";
 }
 
 export default async function Artists({
@@ -107,15 +93,17 @@ export default async function Artists({
       <span className="tabular-nums">{order === "asc" ? "↑" : "↓"}</span>
     ) : null;
 
-  const selectedArtist = artistParam
-    ? artists.find((artist) => artist.id.toString() === artistParam)
-    : null;
-  const selectedArtistWithTracks = selectedArtist
-    ? await prisma.artist.findUnique({
-        where: { id: selectedArtist.id },
+  const selectedArtistIdParam =
+    artistParam && /^\d+$/.test(artistParam) ? BigInt(artistParam) : null;
+  const selectedArtistWithTracks = selectedArtistIdParam
+    ? await prisma.artist.findFirst({
+        where: { id: selectedArtistIdParam, isIgnored: false },
         include: {
           tracks: {
-            include: { album: true },
+            include: {
+              album: true,
+              trackArtists: { include: { artist: true } },
+            },
             orderBy: [{ album: { releaseDate: "desc" } }, { trackNumber: "asc" }],
           },
           albums: {
@@ -125,7 +113,8 @@ export default async function Artists({
         },
       })
     : null;
-  const panelOpen = Boolean(selectedArtist);
+  const panelOpen = Boolean(selectedArtistWithTracks);
+  const openArtistId = selectedArtistWithTracks?.id.toString();
   const closeArtistHref = buildArtistsUrl({ page, sort, order, q });
 
   async function ignoreArtist(formData: FormData) {
@@ -201,7 +190,7 @@ export default async function Artists({
             <ArtistsTable
               artists={artists}
               panelOpen={panelOpen}
-              selectedArtistId={selectedArtist?.id.toString()}
+              selectedArtistId={openArtistId}
               sort={sort}
               order={order}
               searchQuery={q}
@@ -209,35 +198,35 @@ export default async function Artists({
                 page: 1,
                 sort,
                 order,
-                artistId: selectedArtist?.id.toString(),
+                artistId: openArtistId,
               })}
               sortArrow={sortArrow}
               nameSortHref={buildArtistsUrl({
                 page: pageForSort("name"),
                 sort: "name",
                 order: nextOrder("name"),
-                artistId: selectedArtist?.id.toString(),
+                artistId: openArtistId,
                 q,
               })}
               spotifySortHref={buildArtistsUrl({
                 page: pageForSort("spotifyId"),
                 sort: "spotifyId",
                 order: nextOrder("spotifyId"),
-                artistId: selectedArtist?.id.toString(),
+                artistId: openArtistId,
                 q,
               })}
               popularitySortHref={buildArtistsUrl({
                 page: pageForSort("popularity"),
                 sort: "popularity",
                 order: nextOrder("popularity"),
-                artistId: selectedArtist?.id.toString(),
+                artistId: openArtistId,
                 q,
               })}
               followersSortHref={buildArtistsUrl({
                 page: pageForSort("followers"),
                 sort: "followers",
                 order: nextOrder("followers"),
-                artistId: selectedArtist?.id.toString(),
+                artistId: openArtistId,
                 q,
               })}
               getRowHref={(artistId) =>
@@ -263,7 +252,7 @@ export default async function Artists({
                         page: page - 1,
                         sort,
                         order,
-                        artistId: selectedArtist?.id.toString(),
+                        artistId: openArtistId,
                         q,
                       })}
                       className="rounded-lg border border-zinc-200 bg-white px-3 py-2 font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
@@ -277,7 +266,7 @@ export default async function Artists({
                         page: page + 1,
                         sort,
                         order,
-                        artistId: selectedArtist?.id.toString(),
+                        artistId: openArtistId,
                         q,
                       })}
                       className="rounded-lg border border-zinc-200 bg-white px-3 py-2 font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
@@ -306,6 +295,7 @@ export default async function Artists({
                 artistId: selectedArtistWithTracks.id.toString(),
                 q,
               })}
+              artistsHrefContext={{ page, sort, order, q }}
             />
           )}
         </div>

@@ -4,6 +4,9 @@ export type ArtistWithSidebarData = Artist & {
   tracks: Array<
     Track & {
       album: Album;
+      trackArtists: Array<{
+        artist: Artist;
+      }>;
     }
   >;
   albums: Array<
