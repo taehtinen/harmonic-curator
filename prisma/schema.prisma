@@ -64,6 +64,7 @@ model Track {
   album          Album         @relation(fields: [albumId], references: [id])
   artist         Artist        @relation(fields: [artistId], references: [id])
   trackArtists   TrackArtist[]
+  playlistTracks PlaylistTrack[]
 
   @@index([albumId])
   @@index([artistId])
@@ -93,6 +94,24 @@ model Playlist {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  playlistTracks PlaylistTrack[]
+
   @@index([name])
   @@map("playlist")
+}
+
+model PlaylistTrack {
+  id         BigInt   @id @default(autoincrement())
+  playlistId BigInt
+  trackId    BigInt
+  position   Int
+  createdAt  DateTime @default(now())
+
+  playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  track    Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@unique([playlistId, position])
+  @@index([playlistId])
+  @@index([trackId])
+  @@map("playlist_track")
 }

@@ -16,7 +16,7 @@ export default function PlaylistSidebarDetails({
   closeHref: string;
 }) {
   return (
-    <section className="flex min-h-0 flex-1 flex-col overflow-auto p-5">
+    <section className="shrink-0 p-5">
       <div className="flex items-start justify-between gap-4">
         <h2 className="text-xl font-semibold tracking-tight">{playlist.name}</h2>
         <Link

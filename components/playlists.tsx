@@ -87,6 +87,19 @@ export default async function Playlists({
   const selectedPlaylist = selectedPlaylistIdParam
     ? await prisma.playlist.findFirst({
         where: { id: selectedPlaylistIdParam },
+        include: {
+          playlistTracks: {
+            orderBy: { position: "asc" },
+            include: {
+              track: {
+                include: {
+                  artist: { select: { id: true, name: true } },
+                  album: { select: { name: true } },
+                },
+              },
+            },
+          },
+        },
       })
     : null;
 
