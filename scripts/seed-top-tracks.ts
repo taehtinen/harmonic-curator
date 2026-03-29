@@ -24,7 +24,7 @@ async function main() {
   const batchSize = getBatchSize();
   const targetedRaw = process.argv[2];
 
-  let artists: { id: string; spotifyId: string }[];
+  let artists: { id: bigint; spotifyId: string }[];
 
   if (targetedRaw) {
     const spotifyId = normalizeSpotifyArtistId(targetedRaw);
