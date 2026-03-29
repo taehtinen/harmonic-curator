@@ -26,11 +26,18 @@ export interface SpotifyTrack {
   popularity: number;
   track_number: number;
   is_playable: boolean;
+  /** Present on full track objects; may be absent on minimal nested payloads. */
+  artists?: SpotifyTrackArtistRef[];
   album: {
     id: string;
     name: string;
     release_date: string;
   };
+}
+
+export interface SpotifyTrackArtistRef {
+  id: string;
+  name: string;
 }
 
 export interface SpotifyPlaylist {

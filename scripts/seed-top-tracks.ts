@@ -79,39 +79,56 @@ async function main() {
       for (const track of tracks) {
         if (!track.is_playable) continue;
 
-        const album = await prisma.album.upsert({
+        let album = await prisma.album.findUnique({
           where: { spotifyId: track.album.id },
-          update: {
-            name: track.album.name,
-            releaseDate: track.album.release_date,
-            artistId: artist.id,
-          },
-          create: {
-            spotifyId: track.album.id,
-            artistId: artist.id,
-            name: track.album.name,
-            releaseDate: track.album.release_date,
-          },
           select: { id: true },
         });
+        if (!album) {
+          album = await prisma.album.create({
+            data: {
+              spotifyId: track.album.id,
+              artistId: artist.id,
+              name: track.album.name,
+              releaseDate: track.album.release_date,
+            },
+            select: { id: true },
+          });
+        }
 
-        await prisma.track.upsert({
+        let persisted = await prisma.track.findUnique({
           where: { spotifyId: track.id },
-          update: {
-            name: track.name,
-            popularity: track.popularity,
-            trackNumber: track.track_number,
-            albumId: album.id,
-            artistId: artist.id,
-          },
-          create: {
-            spotifyId: track.id,
-            artistId: artist.id,
-            albumId: album.id,
-            name: track.name,
-            popularity: track.popularity,
-            trackNumber: track.track_number,
-          },
+          select: { id: true },
+        });
+        if (!persisted) {
+          persisted = await prisma.track.create({
+            data: {
+              spotifyId: track.id,
+              artistId: artist.id,
+              albumId: album.id,
+              name: track.name,
+              popularity: track.popularity,
+              trackNumber: track.track_number,
+            },
+            select: { id: true },
+          });
+        }
+
+        const spotifyArtistIds = [
+          ...new Set((track.artists ?? []).map((a) => a.id)),
+        ];
+        const linkedArtists = await prisma.artist.findMany({
+          where: { spotifyId: { in: spotifyArtistIds } },
+          select: { id: true },
+        });
+        const artistIdsToLink = new Set(linkedArtists.map((a) => a.id));
+        artistIdsToLink.add(artist.id);
+
+        await prisma.trackArtist.createMany({
+          data: [...artistIdsToLink].map((artistId) => ({
+            trackId: persisted.id,
+            artistId,
+          })),
+          skipDuplicates: true,
         });
       }
 
