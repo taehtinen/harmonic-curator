@@ -13,7 +13,8 @@
     "seed:artists": "tsx scripts/seed-artists.ts",
     "seed:artist": "tsx scripts/seed-artist.ts",
     "seed:artist-catalog": "tsx scripts/seed-artist-catalog.ts",
-    "seed:top-tracks": "tsx scripts/seed-top-tracks.ts"
+    "seed:top-tracks": "tsx scripts/seed-top-tracks.ts",
+    "seed:playlist-tracks": "tsx scripts/seed-playlist-tracks.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.1.0",

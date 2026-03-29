@@ -79,7 +79,76 @@ export interface SpotifyPlaylist {
       added_at: string;
       track: SpotifyTrack;
     }[];
-  }
+  };
+}
+
+/**
+ * Paging object for the playlist’s track list on GET /v1/playlists/{id}.
+ * In the API this is the field **`items`** on the playlist object (not `tracks`, which is deprecated).
+ * @see https://developer.spotify.com/documentation/web-api/reference/get-playlist
+ */
+export interface SpotifyPlaylistContentPaging {
+  href: string;
+  limit: number;
+  next: string | null;
+  offset: number;
+  previous: string | null;
+  total: number;
+}
+
+/**
+ * Normalized GET /v1/playlists/{id} payload (fields we use).
+ * Track list paging is always exposed as **`items`**; `getPlaylist` maps legacy `tracks` into `items`.
+ */
+export interface SpotifyPlaylistMeta {
+  id: string;
+  name: string;
+  description: string | null;
+  /** Playlist track paging (`items` in the Web API — not `tracks`). */
+  items?: SpotifyPlaylistContentPaging;
+}
+
+/** Track count from `items.total` after `getPlaylist` normalization. */
+export function getPlaylistTrackTotal(meta: SpotifyPlaylistMeta): number {
+  return meta.items?.total ?? 0;
+}
+
+/** Raw JSON may still include deprecated `tracks` (same shape as `items`). */
+type SpotifyPlaylistGetResponse = SpotifyPlaylistMeta & {
+  tracks?: SpotifyPlaylistContentPaging;
+};
+
+/**
+ * One row from GET /v1/playlists/{id}/tracks (PlaylistTrackObject).
+ * Spotify prefers `item` over deprecated `track`; either may be null when unavailable.
+ */
+export interface SpotifyPlaylistItem {
+  added_at: string;
+  /** Preferred (track or episode object). */
+  item?: SpotifyTrack | SpotifyPlaylistEpisodeRef | null;
+  /** @deprecated Spotify: use `item` instead. */
+  track?: SpotifyTrack | null;
+}
+
+/** Minimal episode shape when `additional_types=episode` or mixed playlist items. */
+export interface SpotifyPlaylistEpisodeRef {
+  id: string;
+  type: "episode";
+}
+
+function playlistItemToTrackId(row: SpotifyPlaylistItem): string | undefined {
+  const node = row.item ?? row.track;
+  if (!node) return undefined;
+  if ("type" in node && node.type === "episode") return undefined;
+  return node.id;
+}
+
+/** Full album from GET /v1/albums/{id} (fields we use). */
+export interface SpotifyAlbumFull {
+  id: string;
+  name: string;
+  release_date: string;
+  artists: SpotifyTrackArtistRef[];
 }
 
 export interface SpotifySnapshotResponse {
@@ -337,6 +406,58 @@ export class SpotifyClient {
     };
     await this.fetch<void>('PUT', url, body);
     console.log(`Updated playlist ${playlistId} with name "${name}" and description "${description}"`);
+  }
+
+  /**
+   * GET /v1/playlists/{id}
+   * Spotify documents playlist track paging under **`items`**; older responses may send **`tracks`** instead (deprecated).
+   * This method normalizes so the returned object always uses **`items`**.
+   * @see https://developer.spotify.com/documentation/web-api/reference/get-playlist
+   */
+  public async getPlaylist(playlistId: string): Promise<SpotifyPlaylistMeta> {
+    const url = `https://api.spotify.com/v1/playlists/${playlistId}?market=${this.spotifyMarket}`;
+    const raw = await this.fetch<SpotifyPlaylistGetResponse>("GET", url);
+    return {
+      id: raw.id,
+      name: raw.name,
+      description: raw.description,
+      items: raw.items ?? raw.tracks,
+    };
+  }
+
+  public async getAlbum(albumId: string): Promise<SpotifyAlbumFull | null> {
+    const url = `https://api.spotify.com/v1/albums/${albumId}?market=${this.spotifyMarket}`;
+    try {
+      return await this.fetch<SpotifyAlbumFull>("GET", url);
+    } catch (error) {
+      console.error(`Error fetching album ${albumId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * All playlist track items in order (paginated GET /v1/playlists/{id}/tracks).
+   * Rows without a usable Spotify track id (episode, removed, local) are skipped.
+   */
+  public async getPlaylistTrackIds(playlistId: string): Promise<string[]> {
+    const limit = 100;
+    let url: string | null =
+      `https://api.spotify.com/v1/playlists/${playlistId}/tracks?market=${this.spotifyMarket}&limit=${limit}`;
+    const ids: string[] = [];
+
+    while (url) {
+      const page: SpotifyPaging<SpotifyPlaylistItem> = await this.fetch(
+        "GET",
+        url,
+      );
+      for (const row of page.items) {
+        const id = playlistItemToTrackId(row);
+        if (id) ids.push(id);
+      }
+      url = page.next;
+    }
+
+    return ids;
   }
 
 }
