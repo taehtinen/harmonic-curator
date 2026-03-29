@@ -15,6 +15,64 @@ function normalizeSpotifyPlaylistId(raw: string): string {
 }
 
 /**
+ * Load every artist credited on these tracks from Spotify and upsert rows so
+ * `syncAlbumTracksForExistingArtists` can persist tracks and track_artist links.
+ */
+async function ensureArtistsForPlaylistTracks(
+  spotifyClient: SpotifyClient,
+  trackSpotifyIds: string[],
+): Promise<void> {
+  const uniqueTrackIds = [...new Set(trackSpotifyIds)];
+  if (uniqueTrackIds.length === 0) return;
+
+  const fullTracks = await spotifyClient.getTracksByIds(uniqueTrackIds);
+  const artistSpotifyIds = new Set<string>();
+  for (const t of fullTracks) {
+    for (const a of t.artists ?? []) {
+      artistSpotifyIds.add(a.id);
+    }
+  }
+  if (artistSpotifyIds.size === 0) return;
+
+  const existing = await prisma.artist.findMany({
+    where: { spotifyId: { in: [...artistSpotifyIds] } },
+    select: { spotifyId: true },
+  });
+  const existingSet = new Set(existing.map((e) => e.spotifyId));
+  const missing = [...artistSpotifyIds].filter((id) => !existingSet.has(id));
+  if (missing.length === 0) return;
+
+  const fetched = await spotifyClient.getArtistsByIds(missing);
+  for (const artist of fetched) {
+    await prisma.artist.upsert({
+      where: { spotifyId: artist.id },
+      update: {
+        name: artist.name,
+        genres: artist.genres,
+        popularity: artist.popularity,
+        followers: artist.followers.total,
+      },
+      create: {
+        spotifyId: artist.id,
+        name: artist.name,
+        genres: artist.genres,
+        popularity: artist.popularity,
+        followers: artist.followers.total,
+      },
+    });
+  }
+
+  if (fetched.length < missing.length) {
+    console.warn(
+      `Spotify returned ${fetched.length} of ${missing.length} artist object(s); some ids may be invalid.`,
+    );
+  }
+  console.log(
+    `Upserted ${fetched.length} artist row(s) that were missing from the database.`,
+  );
+}
+
+/**
  * Persist every playable track on the album that credits at least one artist row in our DB.
  * Matches the curation rules in `seed-artist-catalog.ts` / `seed-top-tracks.ts`.
  */
@@ -176,6 +234,8 @@ async function main() {
 
   const orderedSpotifyTrackIds =
     await spotifyClient.getPlaylistTrackIds(playlistSpotifyId);
+
+  await ensureArtistsForPlaylistTracks(spotifyClient, orderedSpotifyTrackIds);
 
   const albumSyncCache = new Set<string>();
   const dbIdBySpotifyId = new Map<string, bigint>();

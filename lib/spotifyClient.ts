@@ -49,6 +49,10 @@ export interface SpotifyTracksByIdsResponse {
   tracks: (SpotifyTrack | null)[];
 }
 
+export interface SpotifyArtistsByIdsResponse {
+  artists: (SpotifyArtist | null)[];
+}
+
 export interface SpotifyTrack {
   id: string;
   name: string;
@@ -279,6 +283,28 @@ export class SpotifyClient {
       console.error(`Error fetching artist with ID ${artistId}:`, error);
       return null;
     }
+  }
+
+  /** Full artist objects, max 50 ids per request. */
+  public async getArtistsByIds(artistIds: string[]): Promise<SpotifyArtist[]> {
+    const chunkSize = 50;
+    const out: SpotifyArtist[] = [];
+
+    for (let i = 0; i < artistIds.length; i += chunkSize) {
+      const chunk = artistIds.slice(i, i + chunkSize);
+      const params = new URLSearchParams({
+        ids: chunk.join(","),
+      });
+      const data = await this.fetch<SpotifyArtistsByIdsResponse>(
+        "GET",
+        `https://api.spotify.com/v1/artists?${params.toString()}`,
+      );
+      for (const a of data.artists) {
+        if (a) out.push(a);
+      }
+    }
+
+    return out;
   }
 
   public async getArtistsTopTracks(artistId: string): Promise<SpotifyTrack[]> {
