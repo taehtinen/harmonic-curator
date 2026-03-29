@@ -20,6 +20,35 @@ export interface SpotifyTracksResponse {
   tracks: SpotifyTrack[];
 }
 
+export interface SpotifyPaging<T> {
+  href: string;
+  items: T[];
+  limit: number;
+  next: string | null;
+  offset: number;
+  previous: string | null;
+  total: number;
+}
+
+/** Album stub returned by GET /v1/artists/{id}/albums */
+export interface SpotifyArtistAlbum {
+  id: string;
+  name: string;
+  release_date: string;
+}
+
+/** Track stub returned by GET /v1/albums/{id}/tracks */
+export interface SpotifyAlbumTrack {
+  id: string;
+  name: string;
+  track_number: number;
+  is_playable?: boolean;
+}
+
+export interface SpotifyTracksByIdsResponse {
+  tracks: (SpotifyTrack | null)[];
+}
+
 export interface SpotifyTrack {
   id: string;
   name: string;
@@ -187,6 +216,76 @@ export class SpotifyClient {
     const url = `https://api.spotify.com/v1/artists/${artistId}/top-tracks?market=${this.spotifyMarket}`;
     const data = await this.fetch<SpotifyTracksResponse>('GET', url);
     return data.tracks;
+  }
+
+  /**
+   * All albums (and related release groups) where the artist appears, deduped by Spotify album id.
+   * Order follows the API (typically recent first).
+   */
+  public async getArtistAlbums(artistId: string): Promise<SpotifyArtistAlbum[]> {
+    const limit = 50;
+    const includeGroups = "album,single,appears_on,compilation";
+    let url: string | null =
+      `https://api.spotify.com/v1/artists/${artistId}/albums?include_groups=${includeGroups}&market=${this.spotifyMarket}&limit=${limit}`;
+    const byId = new Map<string, SpotifyArtistAlbum>();
+
+    while (url) {
+      const pageUrl = url;
+      const page: SpotifyPaging<SpotifyArtistAlbum> = await this.fetch(
+        "GET",
+        pageUrl,
+      );
+      for (const item of page.items) {
+        if (item?.id && !byId.has(item.id)) {
+          byId.set(item.id, item);
+        }
+      }
+      url = page.next;
+    }
+
+    return [...byId.values()];
+  }
+
+  public async getAlbumTracks(albumId: string): Promise<SpotifyAlbumTrack[]> {
+    const limit = 50;
+    let url: string | null =
+      `https://api.spotify.com/v1/albums/${albumId}/tracks?market=${this.spotifyMarket}&limit=${limit}`;
+    const all: SpotifyAlbumTrack[] = [];
+
+    while (url) {
+      const pageUrl = url;
+      const page: SpotifyPaging<SpotifyAlbumTrack> = await this.fetch(
+        "GET",
+        pageUrl,
+      );
+      all.push(...page.items.filter((t: SpotifyAlbumTrack) => t?.id));
+      url = page.next;
+    }
+
+    return all;
+  }
+
+  /** Full track objects (popularity, album, artists), max 50 ids per request. */
+  public async getTracksByIds(trackIds: string[]): Promise<SpotifyTrack[]> {
+    const chunkSize = 50;
+    const out: SpotifyTrack[] = [];
+
+    for (let i = 0; i < trackIds.length; i += chunkSize) {
+      const chunk = trackIds.slice(i, i + chunkSize);
+      const params = new URLSearchParams({
+        ids: chunk.join(","),
+        market: this.spotifyMarket,
+      });
+      const data = await this.fetch<SpotifyTracksByIdsResponse>(
+        "GET",
+        `https://api.spotify.com/v1/tracks?${params.toString()}`,
+      );
+      for (const t of data.tracks) {
+        if (t) out.push(t);
+      }
+    }
+
+    return out;
   }
 
   public async removeAllTracksFromPlaylist(playlistId: string): Promise<number> {

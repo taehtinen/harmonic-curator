@@ -12,6 +12,7 @@
     "db:migrate:reset": "prisma migrate reset --force",
     "seed:artists": "tsx scripts/seed-artists.ts",
     "seed:artist": "tsx scripts/seed-artist.ts",
+    "seed:artist-catalog": "tsx scripts/seed-artist-catalog.ts",
     "seed:top-tracks": "tsx scripts/seed-top-tracks.ts"
   },
   "dependencies": {
