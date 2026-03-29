@@ -31,8 +31,8 @@ export default function MainNav() {
               aria-current={active ? "page" : undefined}
               className={
                 active
-                  ? "rounded-lg bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50"
-                  : "rounded-lg px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-200"
+                  ? "rounded-lg bg-zinc-100 px-4 py-2 text-sm font-medium uppercase tracking-wide text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50"
+                  : "rounded-lg px-4 py-2 text-sm font-medium uppercase tracking-wide text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-200"
               }
             >
               {label}

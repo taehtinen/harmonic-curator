@@ -21,7 +21,7 @@ export default function ArtistSidebarPanel({
         <button
           type="button"
           onClick={() => setActiveTab("tracks")}
-          className={`rounded-md px-3 py-1.5 text-sm font-medium ${
+          className={`rounded-md px-3 py-1.5 text-sm font-medium uppercase tracking-wide ${
             activeTab === "tracks"
               ? "bg-zinc-900 text-zinc-50 dark:bg-zinc-100 dark:text-zinc-900"
               : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900"
@@ -32,7 +32,7 @@ export default function ArtistSidebarPanel({
         <button
           type="button"
           onClick={() => setActiveTab("featTracks")}
-          className={`rounded-md px-3 py-1.5 text-sm font-medium ${
+          className={`rounded-md px-3 py-1.5 text-sm font-medium uppercase tracking-wide ${
             activeTab === "featTracks"
               ? "bg-zinc-900 text-zinc-50 dark:bg-zinc-100 dark:text-zinc-900"
               : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900"
@@ -43,7 +43,7 @@ export default function ArtistSidebarPanel({
         <button
           type="button"
           onClick={() => setActiveTab("albums")}
-          className={`rounded-md px-3 py-1.5 text-sm font-medium ${
+          className={`rounded-md px-3 py-1.5 text-sm font-medium uppercase tracking-wide ${
             activeTab === "albums"
               ? "bg-zinc-900 text-zinc-50 dark:bg-zinc-100 dark:text-zinc-900"
               : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900"
