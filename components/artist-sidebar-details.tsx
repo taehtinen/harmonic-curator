@@ -26,7 +26,18 @@ export default function ArtistSidebarDetails({
   return (
     <section className="flex h-1/2 min-h-0 flex-col overflow-auto p-5">
       <div className="flex items-start justify-between gap-4">
-        <h2 className="text-xl font-semibold tracking-tight">{artist.name}</h2>
+        <h2 className="min-w-0 text-xl font-semibold tracking-tight">
+          <a
+            href={`https://open.spotify.com/artist/${artist.spotifyId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Open artist on Spotify"
+            className="inline-flex min-w-0 max-w-full items-center gap-1.5 text-blue-600 underline-offset-2 hover:underline dark:text-blue-400"
+          >
+            <span className="truncate">{artist.name}</span>
+            <SpotifyIcon className="h-4 w-4 shrink-0 opacity-90" />
+          </a>
+        </h2>
         <div className="flex items-center gap-2">
           {canIgnore && (
             <form action={ignoreAction}>
@@ -51,18 +62,7 @@ export default function ArtistSidebarDetails({
 
       <dl className="mt-5 grid grid-cols-[auto,1fr] gap-x-4 gap-y-3 text-sm">
         <dt className="text-zinc-500 dark:text-zinc-400">Spotify ID</dt>
-        <dd className="font-mono text-xs">
-          <a
-            href={`https://open.spotify.com/artist/${artist.spotifyId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Open artist on Spotify"
-            className="inline-flex items-center gap-1 text-blue-600 underline-offset-2 hover:underline dark:text-blue-400"
-          >
-            {artist.spotifyId}
-            <SpotifyIcon className="h-3 w-3 shrink-0 opacity-90" />
-          </a>
-        </dd>
+        <dd className="font-mono text-xs text-zinc-800 dark:text-zinc-200">{artist.spotifyId}</dd>
 
         <dt className="text-zinc-500 dark:text-zinc-400">Popularity</dt>
         <dd>{artist.popularity}</dd>

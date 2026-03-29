@@ -19,7 +19,18 @@ export default function PlaylistSidebarDetails({
   return (
     <section className="shrink-0 p-5">
       <div className="flex items-start justify-between gap-4">
-        <h2 className="text-xl font-semibold tracking-tight">{playlist.name}</h2>
+        <h2 className="min-w-0 text-xl font-semibold tracking-tight">
+          <a
+            href={`https://open.spotify.com/playlist/${playlist.spotifyId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Open playlist on Spotify"
+            className="inline-flex min-w-0 max-w-full items-center gap-1.5 text-blue-600 underline-offset-2 hover:underline dark:text-blue-400"
+          >
+            <span className="truncate">{playlist.name}</span>
+            <SpotifyIcon className="h-4 w-4 shrink-0 opacity-90" />
+          </a>
+        </h2>
         <Link
           href={closeHref}
           className="shrink-0 rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
@@ -30,18 +41,7 @@ export default function PlaylistSidebarDetails({
 
       <dl className="mt-5 grid grid-cols-[auto,1fr] gap-x-4 gap-y-3 text-sm">
         <dt className="text-zinc-500 dark:text-zinc-400">Spotify ID</dt>
-        <dd className="font-mono text-xs">
-          <a
-            href={`https://open.spotify.com/playlist/${playlist.spotifyId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Open playlist on Spotify"
-            className="inline-flex items-center gap-1 text-blue-600 underline-offset-2 hover:underline dark:text-blue-400"
-          >
-            {playlist.spotifyId}
-            <SpotifyIcon className="h-3 w-3 shrink-0 opacity-90" />
-          </a>
-        </dd>
+        <dd className="font-mono text-xs text-zinc-800 dark:text-zinc-200">{playlist.spotifyId}</dd>
 
         <dt className="text-zinc-500 dark:text-zinc-400">Description</dt>
         <dd className="min-w-0 whitespace-pre-wrap break-words text-zinc-800 dark:text-zinc-200">
