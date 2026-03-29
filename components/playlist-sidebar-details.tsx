@@ -9,6 +9,10 @@ function formatDateTime(value: Date) {
   });
 }
 
+function formatDateTimeOrDash(value: Date | null) {
+  return value == null ? "—" : formatDateTime(value);
+}
+
 export default function PlaylistSidebarDetails({
   playlist,
   closeHref,
@@ -39,57 +43,74 @@ export default function PlaylistSidebarDetails({
         </Link>
       </div>
 
-      <dl className="mt-5 grid grid-cols-[auto,1fr] gap-x-4 gap-y-3 text-sm">
-        <dt className="text-zinc-500 dark:text-zinc-400">Spotify ID</dt>
-        <dd className="font-mono text-xs text-zinc-800 dark:text-zinc-200">{playlist.spotifyId}</dd>
+      <div className="mt-5 flex flex-col gap-6 sm:flex-row sm:items-start sm:gap-8">
+        <dl className="grid min-w-0 flex-1 grid-cols-[auto,1fr] gap-x-4 gap-y-3 text-sm">
+          <dt className="text-zinc-500 dark:text-zinc-400">Spotify ID</dt>
+          <dd className="font-mono text-xs text-zinc-800 dark:text-zinc-200">{playlist.spotifyId}</dd>
 
-        <dt className="text-zinc-500 dark:text-zinc-400">Description</dt>
-        <dd className="min-w-0 whitespace-pre-wrap break-words text-zinc-800 dark:text-zinc-200">
-          {playlist.description.trim() ? (
-            playlist.description
-          ) : (
-            <span className="text-zinc-400 dark:text-zinc-500">—</span>
-          )}
-        </dd>
-
-        <dt className="text-zinc-500 dark:text-zinc-400">Genres</dt>
-        <dd className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            {playlist.genres.length === 0 ? (
-              <span className="text-zinc-400 dark:text-zinc-500">—</span>
+          <dt className="text-zinc-500 dark:text-zinc-400">Description</dt>
+          <dd className="min-w-0 whitespace-pre-wrap break-words text-zinc-800 dark:text-zinc-200">
+            {playlist.description.trim() ? (
+              playlist.description
             ) : (
-              playlist.genres.map((genre, index) => (
-                <span
-                  key={`${genre}-${index}`}
-                  className="inline-flex max-w-full items-center rounded-full border border-zinc-200 bg-zinc-100/80 px-2.5 py-0.5 text-xs font-medium text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-200"
-                >
-                  <span className="truncate">{genre}</span>
-                </span>
-              ))
+              <span className="text-zinc-400 dark:text-zinc-500">—</span>
             )}
+          </dd>
+
+          <dt className="text-zinc-500 dark:text-zinc-400">Genres</dt>
+          <dd className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              {playlist.genres.length === 0 ? (
+                <span className="text-zinc-400 dark:text-zinc-500">—</span>
+              ) : (
+                playlist.genres.map((genre, index) => (
+                  <span
+                    key={`${genre}-${index}`}
+                    className="inline-flex max-w-full items-center rounded-full border border-zinc-200 bg-zinc-100/80 px-2.5 py-0.5 text-xs font-medium text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-200"
+                  >
+                    <span className="truncate">{genre}</span>
+                  </span>
+                ))
+              )}
+            </div>
+          </dd>
+
+          <dt className="text-zinc-500 dark:text-zinc-400">Max followers</dt>
+          <dd className="tabular-nums">
+            {playlist.maxFollowers == null ? (
+              <span className="text-zinc-400 dark:text-zinc-500" title="No follower limit">
+                —
+              </span>
+            ) : (
+              playlist.maxFollowers.toLocaleString()
+            )}
+          </dd>
+
+          <dt className="text-zinc-500 dark:text-zinc-400">Size</dt>
+          <dd className="tabular-nums">{playlist.size.toLocaleString()}</dd>
+        </dl>
+
+        <dl className="shrink-0 space-y-3 border-zinc-200 text-sm sm:w-52 sm:border-l sm:pl-6 dark:border-zinc-700">
+          <div>
+            <dt className="text-zinc-500 dark:text-zinc-400">Updated</dt>
+            <dd className="mt-0.5 tabular-nums text-zinc-800 dark:text-zinc-200">
+              {formatDateTime(playlist.updatedAt)}
+            </dd>
           </div>
-        </dd>
-
-        <dt className="text-zinc-500 dark:text-zinc-400">Max followers</dt>
-        <dd className="tabular-nums">
-          {playlist.maxFollowers == null ? (
-            <span className="text-zinc-400 dark:text-zinc-500" title="No follower limit">
-              —
-            </span>
-          ) : (
-            playlist.maxFollowers.toLocaleString()
-          )}
-        </dd>
-
-        <dt className="text-zinc-500 dark:text-zinc-400">Size</dt>
-        <dd className="tabular-nums">{playlist.size.toLocaleString()}</dd>
-
-        <dt className="text-zinc-500 dark:text-zinc-400">Created</dt>
-        <dd>{formatDateTime(playlist.createdAt)}</dd>
-
-        <dt className="text-zinc-500 dark:text-zinc-400">Updated</dt>
-        <dd>{formatDateTime(playlist.updatedAt)}</dd>
-      </dl>
+          <div>
+            <dt className="text-zinc-500 dark:text-zinc-400">Last track edit</dt>
+            <dd className="mt-0.5 tabular-nums text-zinc-800 dark:text-zinc-200">
+              {formatDateTimeOrDash(playlist.lastTrackEditAt)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-zinc-500 dark:text-zinc-400">Last Spotify publish</dt>
+            <dd className="mt-0.5 tabular-nums text-zinc-800 dark:text-zinc-200">
+              {formatDateTimeOrDash(playlist.lastSpotifyPublishAt)}
+            </dd>
+          </div>
+        </dl>
+      </div>
     </section>
   );
 }

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { recordPlaylistAfterSpotifyImport } from "@/lib/playlist-timestamps";
 import {
   SpotifyClient,
   getPlaylistTrackTotal,
@@ -232,8 +233,8 @@ async function main() {
     );
   }
 
-  const orderedSpotifyTrackIds =
-    await spotifyClient.getPlaylistTrackIds(playlistSpotifyId);
+  const { ids: orderedSpotifyTrackIds, latestTrackAddedAt } =
+    await spotifyClient.getPlaylistTrackIdsWithLatestAdded(playlistSpotifyId);
 
   await ensureArtistsForPlaylistTracks(spotifyClient, orderedSpotifyTrackIds);
 
@@ -277,6 +278,8 @@ async function main() {
       });
     }
   });
+
+  await recordPlaylistAfterSpotifyImport(playlist!.id, latestTrackAddedAt);
 
   console.log(
     `Synced ${resolvedTrackIds.length} playlist_track row(s) for playlist "${playlist.name}" (db id=${playlist.id}).` +

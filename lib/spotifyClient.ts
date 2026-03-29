@@ -466,10 +466,21 @@ export class SpotifyClient {
    * Rows without a usable Spotify track id (episode, removed, local) are skipped.
    */
   public async getPlaylistTrackIds(playlistId: string): Promise<string[]> {
+    const { ids } = await this.getPlaylistTrackIdsWithLatestAdded(playlistId);
+    return ids;
+  }
+
+  /**
+   * Same tracks as {@link getPlaylistTrackIds}, plus the latest `added_at` among those rows (single paginated pass).
+   */
+  public async getPlaylistTrackIdsWithLatestAdded(
+    playlistId: string,
+  ): Promise<{ ids: string[]; latestTrackAddedAt: Date | null }> {
     const limit = 100;
     let url: string | null =
       `https://api.spotify.com/v1/playlists/${playlistId}/tracks?market=${this.spotifyMarket}&limit=${limit}`;
     const ids: string[] = [];
+    let maxAddedMs = 0;
 
     while (url) {
       const page: SpotifyPaging<SpotifyPlaylistItem> = await this.fetch(
@@ -478,12 +489,21 @@ export class SpotifyClient {
       );
       for (const row of page.items) {
         const id = playlistItemToTrackId(row);
-        if (id) ids.push(id);
+        if (id) {
+          ids.push(id);
+          if (row.added_at) {
+            const t = Date.parse(row.added_at);
+            if (!Number.isNaN(t) && t > maxAddedMs) maxAddedMs = t;
+          }
+        }
       }
       url = page.next;
     }
 
-    return ids;
+    return {
+      ids,
+      latestTrackAddedAt: maxAddedMs > 0 ? new Date(maxAddedMs) : null,
+    };
   }
 
 }

@@ -91,6 +91,13 @@ model Playlist {
   genres         String[]
   maxFollowers   Int?
   size           Int
+  /** Last time local `playlist_track` rows were written (reorder/add/remove, including import seed). */
+  lastTrackEditAt DateTime?
+  /**
+   * Last time this app pushed playlist tracks to Spotify, or the latest Spotify `added_at` on import seed
+   * (most recent track addition among rows we keep).
+   */
+  lastSpotifyPublishAt DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
