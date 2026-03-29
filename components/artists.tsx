@@ -74,6 +74,14 @@ export default async function Artists({
     orderBy: { [sort]: order },
     take: ARTISTS_PER_PAGE,
     skip,
+    include: {
+      _count: { select: { tracks: true } },
+      albums: {
+        orderBy: { releaseDate: "desc" },
+        take: 1,
+        select: { releaseDate: true },
+      },
+    },
   });
   const hasPrev = page > 1;
   const hasNext = page < totalPages;

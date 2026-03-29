@@ -2,6 +2,11 @@ import Link from "next/link";
 import type { ReactElement } from "react";
 import type { Artist } from "@prisma/client";
 
+export type ArtistListRow = Artist & {
+  _count: { tracks: number };
+  albums: { releaseDate: string }[];
+};
+
 type SortColumn = "name" | "spotifyId" | "popularity" | "followers";
 
 export default function ArtistsTable({
@@ -19,7 +24,7 @@ export default function ArtistsTable({
   followersSortHref,
   getRowHref,
 }: {
-  artists: Artist[];
+  artists: ArtistListRow[];
   panelOpen: boolean;
   selectedArtistId?: string;
   sort: string;
@@ -117,13 +122,15 @@ export default function ArtistsTable({
                 {sortArrow("followers")}
               </Link>
             </th>
+            <th className="px-4 py-3 text-right">Tracks</th>
+            <th className="px-4 py-3">Latest release</th>
           </tr>
         </thead>
         <tbody>
           {artists.length === 0 ? (
             <tr>
               <td
-                colSpan={panelOpen ? 4 : 5}
+                colSpan={panelOpen ? 6 : 7}
                 className="px-4 py-10 text-center text-sm text-zinc-500 dark:text-zinc-400"
               >
                 {hasSearch
@@ -207,6 +214,16 @@ export default function ArtistsTable({
                   <td className="p-0 text-right tabular-nums">
                     <Link href={rowHref} className={rowBaseClass}>
                       {artist.followers.toLocaleString()}
+                    </Link>
+                  </td>
+                  <td className="p-0 text-right tabular-nums">
+                    <Link href={rowHref} className={rowBaseClass}>
+                      {artist._count.tracks.toLocaleString()}
+                    </Link>
+                  </td>
+                  <td className="max-w-[8rem] truncate p-0 text-xs text-zinc-600 dark:text-zinc-300">
+                    <Link href={rowHref} className={rowBaseClass}>
+                      {artist.albums[0]?.releaseDate ?? "—"}
                     </Link>
                   </td>
                 </tr>
