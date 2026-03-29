@@ -4,6 +4,7 @@ export type PlaylistSidebarTrackRow = PlaylistTrack & {
   track: Track & {
     artist: { id: bigint; name: string };
     album: { releaseDate: string };
+    trackArtists: Array<{ artist: { id: bigint; name: string } }>;
   };
 };
 

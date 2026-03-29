@@ -10,6 +10,7 @@ import {
   type PlaylistsListOrder,
   type PlaylistsListSort,
 } from "@/lib/playlists-url";
+import type { ArtistsHrefContext } from "@/lib/artists-url";
 
 const PLAYLISTS_PER_PAGE = 100;
 
@@ -98,6 +99,9 @@ export default async function Playlists({
                 include: {
                   artist: { select: { id: true, name: true } },
                   album: { select: { releaseDate: true } },
+                  trackArtists: {
+                    include: { artist: { select: { id: true, name: true } } },
+                  },
                 },
               },
             },
@@ -116,6 +120,13 @@ export default async function Playlists({
     playlistId: openPlaylistId,
     q,
   });
+
+  const artistsHrefContext: ArtistsHrefContext = {
+    page: 1,
+    sort: "popularity",
+    order: "desc",
+    q: "",
+  };
 
   async function generatePlaylistFromCriteria(formData: FormData) {
     "use server";
@@ -246,6 +257,7 @@ export default async function Playlists({
               closeHref={closePlaylistHref}
               generatePlaylistAction={generatePlaylistFromCriteria}
               generatePlaylistReturnToHref={playlistPanelReturnToHref}
+              artistsHrefContext={artistsHrefContext}
             />
           )}
         </div>

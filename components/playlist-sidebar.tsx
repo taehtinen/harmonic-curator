@@ -1,17 +1,20 @@
 import PlaylistSidebarDetails from "@/components/playlist-sidebar-details";
 import PlaylistSidebarTracksTable from "@/components/playlist-sidebar-tracks-table";
 import type { PlaylistWithSidebarTracks } from "@/components/playlist-sidebar-types";
+import type { ArtistsHrefContext } from "@/lib/artists-url";
 
 export default function PlaylistSidebar({
   playlist,
   closeHref,
   generatePlaylistAction,
   generatePlaylistReturnToHref,
+  artistsHrefContext,
 }: {
   playlist: PlaylistWithSidebarTracks;
   closeHref: string;
   generatePlaylistAction: (formData: FormData) => Promise<void>;
   generatePlaylistReturnToHref: string;
+  artistsHrefContext: ArtistsHrefContext;
 }) {
   return (
     <aside className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50/80 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/60">
@@ -26,7 +29,10 @@ export default function PlaylistSidebar({
           Tracks ({playlist.playlistTracks.length.toLocaleString()})
         </h3>
         <div className="flex min-h-0 flex-1 flex-col px-2 pb-4 pt-2">
-          <PlaylistSidebarTracksTable rows={playlist.playlistTracks} />
+          <PlaylistSidebarTracksTable
+            rows={playlist.playlistTracks}
+            artistsHrefContext={artistsHrefContext}
+          />
         </div>
       </section>
     </aside>

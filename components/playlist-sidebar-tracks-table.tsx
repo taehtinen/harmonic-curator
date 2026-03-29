@@ -1,11 +1,24 @@
+import Link from "next/link";
 import SpotifyIcon from "@/components/spotify-icon";
 import type { PlaylistSidebarTrackRow } from "@/components/playlist-sidebar-types";
+import { buildArtistsUrl, type ArtistsHrefContext } from "@/lib/artists-url";
+
+function collaboratorArtists(track: PlaylistSidebarTrackRow["track"]): Array<{ id: bigint; name: string }> {
+  const byId = new Map<string, { id: bigint; name: string }>();
+  for (const ta of track.trackArtists) {
+    if (ta.artist.id === track.artistId) continue;
+    byId.set(ta.artist.id.toString(), { id: ta.artist.id, name: ta.artist.name });
+  }
+  return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
 
 export default function PlaylistSidebarTracksTable({
   rows,
+  artistsHrefContext,
   emptyMessage = "No tracks in this playlist yet.",
 }: {
   rows: PlaylistSidebarTrackRow[];
+  artistsHrefContext: ArtistsHrefContext;
   emptyMessage?: string;
 }) {
   return (
@@ -17,10 +30,10 @@ export default function PlaylistSidebarTracksTable({
               #
             </th>
             <th scope="col" className="px-3 py-2">
-              Track
+              Artist
             </th>
             <th scope="col" className="px-3 py-2">
-              Artist
+              Track
             </th>
             <th scope="col" className="px-3 py-2">
               Release date
@@ -34,10 +47,43 @@ export default function PlaylistSidebarTracksTable({
           {rows.length > 0 ? (
             rows.map((row) => {
               const t = row.track;
+              const feats = collaboratorArtists(t);
               return (
                 <tr key={row.id.toString()}>
                   <td className="px-3 py-2 text-right tabular-nums text-zinc-500 dark:text-zinc-400">
                     {row.position}
+                  </td>
+                  <td className="max-w-[12rem] px-3 py-2 text-zinc-700 dark:text-zinc-300">
+                    <div className="min-w-0">
+                      <Link
+                        href={buildArtistsUrl({
+                          ...artistsHrefContext,
+                          artistId: t.artist.id.toString(),
+                        })}
+                        className="font-medium text-zinc-900 underline-offset-2 hover:text-blue-600 hover:underline dark:text-zinc-100 dark:hover:text-blue-400"
+                      >
+                        {t.artist.name}
+                      </Link>
+                      {feats.length > 0 ? (
+                        <div className="mt-0.5 min-w-0 text-xs font-normal text-zinc-500 dark:text-zinc-400">
+                          <span className="whitespace-nowrap">feat. </span>
+                          {feats.map((a, i) => (
+                            <span key={a.id.toString()}>
+                              {i > 0 ? ", " : null}
+                              <Link
+                                href={buildArtistsUrl({
+                                  ...artistsHrefContext,
+                                  artistId: a.id.toString(),
+                                })}
+                                className="text-zinc-700 underline-offset-2 hover:text-zinc-900 hover:underline dark:text-zinc-300 dark:hover:text-zinc-100"
+                              >
+                                {a.name}
+                              </Link>
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
                   </td>
                   <td className="max-w-[12rem] px-3 py-2">
                     <a
@@ -50,9 +96,6 @@ export default function PlaylistSidebarTracksTable({
                       <span className="truncate">{t.name}</span>
                       <SpotifyIcon className="h-3.5 w-3.5 shrink-0 opacity-90" />
                     </a>
-                  </td>
-                  <td className="max-w-[10rem] truncate px-3 py-2 text-zinc-700 dark:text-zinc-300">
-                    {t.artist.name}
                   </td>
                   <td className="max-w-[10rem] truncate px-3 py-2 tabular-nums text-zinc-600 dark:text-zinc-400">
                     {t.album.releaseDate}
