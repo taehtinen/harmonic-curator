@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser, userIsAdmin } from "@/lib/auth";
-import ArtistsTable from "@/components/artists-table";
+import ArtistsTable, { type ArtistListRow } from "@/components/artists-table";
 import ArtistSidebar from "@/components/artist-sidebar";
 import {
   buildArtistsUrl,
@@ -15,12 +16,41 @@ const ARTISTS_PER_PAGE = 100;
 type SortColumn = ArtistsListSort;
 type SortOrder = ArtistsListOrder;
 
-const SORT_COLUMNS: SortColumn[] = ["name", "spotifyId", "popularity", "followers"];
+const SORT_COLUMNS: SortColumn[] = [
+  "name",
+  "spotifyId",
+  "popularity",
+  "followers",
+  "tracks",
+  "latestRelease",
+];
+
+function escapeLikePattern(s: string): string {
+  return s.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+}
+
+function artistListOrderBy(
+  sort: Exclude<SortColumn, "latestRelease">,
+  order: SortOrder,
+): Prisma.ArtistOrderByWithRelationInput {
+  switch (sort) {
+    case "name":
+      return { name: order };
+    case "spotifyId":
+      return { spotifyId: order };
+    case "popularity":
+      return { popularity: order };
+    case "followers":
+      return { followers: order };
+    case "tracks":
+      return { tracks: { _count: order } };
+  }
+}
 
 function parseSort(sortParam: string | undefined): SortColumn {
   if (sortParam && SORT_COLUMNS.includes(sortParam as SortColumn))
     return sortParam as SortColumn;
-  return "popularity";
+  return "latestRelease";
 }
 
 function parseOrder(orderParam: string | undefined): SortOrder {
@@ -69,20 +99,63 @@ export default async function Artists({
   const totalPages = Math.ceil(total / ARTISTS_PER_PAGE);
   const page = Math.min(rawPage, Math.max(1, totalPages));
   const skip = (page - 1) * ARTISTS_PER_PAGE;
-  const artists = await prisma.artist.findMany({
-    where: listWhere,
-    orderBy: { [sort]: order },
-    take: ARTISTS_PER_PAGE,
-    skip,
-    include: {
-      _count: { select: { tracks: true } },
-      albums: {
-        orderBy: { releaseDate: "desc" },
-        take: 1,
-        select: { releaseDate: true },
-      },
+  const listInclude = {
+    _count: { select: { tracks: true } },
+    albums: {
+      orderBy: { releaseDate: "desc" as const },
+      take: 1,
+      select: { releaseDate: true },
     },
-  });
+  } satisfies Prisma.ArtistInclude;
+
+  let artists: ArtistListRow[];
+
+  if (sort === "latestRelease") {
+    const orderSql =
+      order === "asc"
+        ? Prisma.raw("ASC NULLS FIRST")
+        : Prisma.raw("DESC NULLS LAST");
+    const searchSql =
+      q.length > 0
+        ? Prisma.sql`AND a.name ILIKE ${`%${escapeLikePattern(q)}%`} ESCAPE '\\'`
+        : Prisma.empty;
+
+    const idRows = await prisma.$queryRaw<{ id: bigint }[]>`
+      SELECT a.id
+      FROM artist a
+      LEFT JOIN LATERAL (
+        SELECT MAX(al."releaseDate") AS max_rd
+        FROM album al
+        WHERE al."artistId" = a.id
+      ) al ON true
+      WHERE a."isIgnored" = false
+      ${searchSql}
+      ORDER BY al.max_rd ${orderSql}, a.id ASC
+      LIMIT ${ARTISTS_PER_PAGE}
+      OFFSET ${skip}
+    `;
+
+    const ids = idRows.map((r) => r.id);
+    const fetched =
+      ids.length > 0
+        ? await prisma.artist.findMany({
+            where: { id: { in: ids } },
+            include: listInclude,
+          })
+        : [];
+    const rank = new Map(ids.map((id, i) => [id.toString(), i]));
+    artists = [...fetched].sort(
+      (a, b) => (rank.get(a.id.toString()) ?? 0) - (rank.get(b.id.toString()) ?? 0),
+    );
+  } else {
+    artists = await prisma.artist.findMany({
+      where: listWhere,
+      orderBy: artistListOrderBy(sort, order),
+      take: ARTISTS_PER_PAGE,
+      skip,
+      include: listInclude,
+    });
+  }
   const hasPrev = page > 1;
   const hasNext = page < totalPages;
 
@@ -253,6 +326,20 @@ export default async function Artists({
                 page: pageForSort("followers"),
                 sort: "followers",
                 order: nextOrder("followers"),
+                artistId: openArtistId,
+                q,
+              })}
+              tracksSortHref={buildArtistsUrl({
+                page: pageForSort("tracks"),
+                sort: "tracks",
+                order: nextOrder("tracks"),
+                artistId: openArtistId,
+                q,
+              })}
+              latestReleaseSortHref={buildArtistsUrl({
+                page: pageForSort("latestRelease"),
+                sort: "latestRelease",
+                order: nextOrder("latestRelease"),
                 artistId: openArtistId,
                 q,
               })}

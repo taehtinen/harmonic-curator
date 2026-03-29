@@ -1,4 +1,10 @@
-export type ArtistsListSort = "name" | "spotifyId" | "popularity" | "followers";
+export type ArtistsListSort =
+  | "name"
+  | "spotifyId"
+  | "popularity"
+  | "followers"
+  | "tracks"
+  | "latestRelease";
 export type ArtistsListOrder = "asc" | "desc";
 
 export type ArtistsHrefContext = {

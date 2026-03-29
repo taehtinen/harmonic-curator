@@ -1,13 +1,14 @@
 import Link from "next/link";
 import type { ReactElement } from "react";
 import type { Artist } from "@prisma/client";
+import type { ArtistsListSort } from "@/lib/artists-url";
 
 export type ArtistListRow = Artist & {
   _count: { tracks: number };
   albums: { releaseDate: string }[];
 };
 
-type SortColumn = "name" | "spotifyId" | "popularity" | "followers";
+type SortColumn = ArtistsListSort;
 
 export default function ArtistsTable({
   artists,
@@ -22,6 +23,8 @@ export default function ArtistsTable({
   spotifySortHref,
   popularitySortHref,
   followersSortHref,
+  tracksSortHref,
+  latestReleaseSortHref,
   getRowHref,
 }: {
   artists: ArtistListRow[];
@@ -36,6 +39,8 @@ export default function ArtistsTable({
   spotifySortHref: string;
   popularitySortHref: string;
   followersSortHref: string;
+  tracksSortHref: string;
+  latestReleaseSortHref: string;
   getRowHref: (artistId: string) => string;
 }) {
   const hasSearch = searchQuery.length > 0;
@@ -122,8 +127,24 @@ export default function ArtistsTable({
                 {sortArrow("followers")}
               </Link>
             </th>
-            <th className="px-4 py-3 text-right">Tracks</th>
-            <th className="px-4 py-3">Latest release</th>
+            <th className="px-4 py-3 text-right">
+              <Link
+                href={tracksSortHref}
+                className="flex w-full cursor-pointer select-none items-center justify-between gap-2 hover:text-zinc-700 dark:hover:text-zinc-200"
+              >
+                <span>Tracks</span>
+                {sortArrow("tracks")}
+              </Link>
+            </th>
+            <th className="px-4 py-3">
+              <Link
+                href={latestReleaseSortHref}
+                className="flex w-full cursor-pointer select-none items-center justify-between gap-2 hover:text-zinc-700 dark:hover:text-zinc-200"
+              >
+                <span>Latest release</span>
+                {sortArrow("latestRelease")}
+              </Link>
+            </th>
           </tr>
         </thead>
         <tbody>
