@@ -13,7 +13,7 @@ export default function ArtistSidebarPanel({
   artist: ArtistWithSidebarData;
   artistsHrefContext: ArtistsHrefContext;
 }) {
-  const [activeTab, setActiveTab] = useState<"tracks" | "albums">("tracks");
+  const [activeTab, setActiveTab] = useState<"tracks" | "featTracks" | "albums">("tracks");
 
   return (
     <section className="flex h-1/2 min-h-0 flex-col border-t border-zinc-200 p-5 dark:border-zinc-800">
@@ -28,6 +28,17 @@ export default function ArtistSidebarPanel({
           }`}
         >
           Tracks
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("featTracks")}
+          className={`rounded-md px-3 py-1.5 text-sm font-medium ${
+            activeTab === "featTracks"
+              ? "bg-zinc-900 text-zinc-50 dark:bg-zinc-100 dark:text-zinc-900"
+              : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900"
+          }`}
+        >
+          Feat. Tracks
         </button>
         <button
           type="button"
@@ -46,6 +57,14 @@ export default function ArtistSidebarPanel({
           <ArtistSidebarTracksTable
             tracks={artist.tracks}
             artistsHrefContext={artistsHrefContext}
+          />
+        ) : activeTab === "featTracks" ? (
+          <ArtistSidebarTracksTable
+            tracks={artist.featTracks}
+            artistsHrefContext={artistsHrefContext}
+            creditLine="primary"
+            excludeCollaboratorArtistId={artist.id}
+            emptyMessage="No featured appearances on other artists' tracks."
           />
         ) : (
           <ArtistSidebarAlbumsTable albums={artist.albums} />

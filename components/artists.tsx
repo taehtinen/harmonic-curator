@@ -95,7 +95,7 @@ export default async function Artists({
 
   const selectedArtistIdParam =
     artistParam && /^\d+$/.test(artistParam) ? BigInt(artistParam) : null;
-  const selectedArtistWithTracks = selectedArtistIdParam
+  const selectedArtistBase = selectedArtistIdParam
     ? await prisma.artist.findFirst({
         where: { id: selectedArtistIdParam, isIgnored: false },
         include: {
@@ -112,6 +112,25 @@ export default async function Artists({
           },
         },
       })
+    : null;
+
+  const featTracks = selectedArtistBase
+    ? await prisma.track.findMany({
+        where: {
+          artistId: { not: selectedArtistBase.id },
+          trackArtists: { some: { artistId: selectedArtistBase.id } },
+        },
+        include: {
+          album: true,
+          artist: true,
+          trackArtists: { include: { artist: true } },
+        },
+        orderBy: [{ album: { releaseDate: "desc" } }, { trackNumber: "asc" }],
+      })
+    : [];
+
+  const selectedArtistWithTracks = selectedArtistBase
+    ? { ...selectedArtistBase, featTracks }
     : null;
   const panelOpen = Boolean(selectedArtistWithTracks);
   const openArtistId = selectedArtistWithTracks?.id.toString();
