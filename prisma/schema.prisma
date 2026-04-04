@@ -12,6 +12,16 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id           BigInt   @id @default(autoincrement())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("user")
+}
+
 model Artist {
   id           BigInt   @id @default(autoincrement())
   spotifyId    String   @unique
