@@ -114,13 +114,13 @@ export default function PlaylistSidebarDetails({
             </form>
           </div>
           <div>
-            <dt className="text-zinc-500 dark:text-zinc-400">Last track edit</dt>
+            <dt className="text-zinc-500 dark:text-zinc-400">Last edited</dt>
             <dd className="mt-0.5 tabular-nums text-zinc-800 dark:text-zinc-200">
               {formatDateTimeOrDash(playlist.lastTrackEditAt)}
             </dd>
           </div>
           <div>
-            <dt className="text-zinc-500 dark:text-zinc-400">Last Spotify publish</dt>
+            <dt className="text-zinc-500 dark:text-zinc-400">Last published</dt>
             <dd className="mt-0.5 tabular-nums text-zinc-800 dark:text-zinc-200">
               {formatDateTimeOrDash(playlist.lastSpotifyPublishAt)}
             </dd>
