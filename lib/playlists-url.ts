@@ -1,4 +1,4 @@
-export type PlaylistsListSort = "name" | "spotifyId" | "maxFollowers" | "size";
+export type PlaylistsListSort = "name" | "lastSpotifyPublishAt";
 export type PlaylistsListOrder = "asc" | "desc";
 
 export function buildPlaylistsUrl(params: {

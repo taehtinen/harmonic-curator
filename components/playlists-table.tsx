@@ -2,7 +2,15 @@ import Link from "next/link";
 import type { ReactElement } from "react";
 import type { Playlist } from "@prisma/client";
 
-type SortColumn = "name" | "spotifyId" | "maxFollowers" | "size";
+import type { PlaylistsListSort } from "@/lib/playlists-url";
+
+function formatLastPublished(value: Date | null) {
+  if (value == null) return "—";
+  return value.toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
 
 export default function PlaylistsTable({
   playlists,
@@ -14,9 +22,7 @@ export default function PlaylistsTable({
   clearSearchHref,
   sortArrow,
   nameSortHref,
-  spotifySortHref,
-  maxFollowersSortHref,
-  sizeSortHref,
+  lastPublishedSortHref,
   getRowHref,
 }: {
   playlists: Playlist[];
@@ -26,15 +32,13 @@ export default function PlaylistsTable({
   order: string;
   searchQuery: string;
   clearSearchHref: string;
-  sortArrow: (col: SortColumn) => ReactElement | null;
+  sortArrow: (col: PlaylistsListSort) => ReactElement | null;
   nameSortHref: string;
-  spotifySortHref: string;
-  maxFollowersSortHref: string;
-  sizeSortHref: string;
+  lastPublishedSortHref: string;
   getRowHref: (playlistId: string) => string;
 }) {
   const hasSearch = searchQuery.length > 0;
-  const emptyColSpan = panelOpen ? 4 : 6;
+  const emptyColSpan = panelOpen ? 2 : 3;
 
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50/80 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/60">
@@ -90,33 +94,14 @@ export default function PlaylistsTable({
                   {sortArrow("name")}
                 </Link>
               </th>
-              <th className="px-4 py-3">
-                <Link
-                  href={spotifySortHref}
-                  className="flex w-full cursor-pointer select-none items-center justify-between gap-2 hover:text-zinc-700 dark:hover:text-zinc-200"
-                >
-                  <span>Spotify ID</span>
-                  {sortArrow("spotifyId")}
-                </Link>
-              </th>
               {!panelOpen && <th className="px-4 py-3">Description</th>}
-              {!panelOpen && <th className="px-4 py-3">Genres</th>}
-              <th className="px-4 py-3 text-right">
+              <th className="px-4 py-3 text-right whitespace-nowrap">
                 <Link
-                  href={maxFollowersSortHref}
+                  href={lastPublishedSortHref}
                   className="flex w-full cursor-pointer select-none items-center justify-between gap-2 hover:text-zinc-700 dark:hover:text-zinc-200"
                 >
-                  <span className="ml-auto">Max followers</span>
-                  {sortArrow("maxFollowers")}
-                </Link>
-              </th>
-              <th className="px-4 py-3 text-right">
-                <Link
-                  href={sizeSortHref}
-                  className="flex w-full cursor-pointer select-none items-center justify-between gap-2 hover:text-zinc-700 dark:hover:text-zinc-200"
-                >
-                  <span className="ml-auto">Size</span>
-                  {sortArrow("size")}
+                  <span className="ml-auto">Last published</span>
+                  {sortArrow("lastSpotifyPublishAt")}
                 </Link>
               </th>
             </tr>
@@ -155,11 +140,6 @@ export default function PlaylistsTable({
                         {playlist.name}
                       </Link>
                     </td>
-                    <td className="max-w-xs truncate p-0 text-xs text-zinc-500 dark:text-zinc-400">
-                      <Link href={rowHref} className={`${rowBaseClass} truncate`}>
-                        {playlist.spotifyId}
-                      </Link>
-                    </td>
                     {!panelOpen && (
                       <td
                         className="max-w-xs truncate p-0 text-zinc-600 dark:text-zinc-300"
@@ -172,51 +152,9 @@ export default function PlaylistsTable({
                         </Link>
                       </td>
                     )}
-                    {!panelOpen && (
-                      <td className="p-0 text-xs text-zinc-600 dark:text-zinc-300">
-                        <Link
-                          href={rowHref}
-                          className={`${rowBaseClass} flex flex-wrap items-center gap-1.5`}
-                        >
-                          {playlist.genres.length === 0 ? (
-                            <span
-                              className="text-zinc-400 dark:text-zinc-500"
-                              title="No genres"
-                              aria-label="No genres"
-                            >
-                              —
-                            </span>
-                          ) : (
-                            playlist.genres.map((genre, index) => (
-                              <span
-                                key={`${playlistKey}-${genre}-${index}`}
-                                className="inline-flex max-w-full items-center rounded-full border border-zinc-200 bg-zinc-100/80 px-2.5 py-0.5 text-xs font-medium text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-200"
-                              >
-                                <span className="truncate">{genre}</span>
-                              </span>
-                            ))
-                          )}
-                        </Link>
-                      </td>
-                    )}
-                    <td className="p-0 text-right tabular-nums">
+                    <td className="p-0 text-right tabular-nums text-zinc-600 dark:text-zinc-300">
                       <Link href={rowHref} className={rowBaseClass}>
-                        {playlist.maxFollowers == null ? (
-                          <span
-                            className="text-zinc-400 dark:text-zinc-500"
-                            title="No follower limit"
-                            aria-label="No follower limit"
-                          >
-                            —
-                          </span>
-                        ) : (
-                          playlist.maxFollowers.toLocaleString()
-                        )}
-                      </Link>
-                    </td>
-                    <td className="p-0 text-right tabular-nums">
-                      <Link href={rowHref} className={rowBaseClass}>
-                        {playlist.size.toLocaleString()}
+                        {formatLastPublished(playlist.lastSpotifyPublishAt)}
                       </Link>
                     </td>
                   </tr>

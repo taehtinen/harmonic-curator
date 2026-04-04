@@ -15,7 +15,7 @@ import type { ArtistsHrefContext } from "@/lib/artists-url";
 
 const PLAYLISTS_PER_PAGE = 100;
 
-const SORT_COLUMNS: PlaylistsListSort[] = ["name", "spotifyId", "maxFollowers", "size"];
+const SORT_COLUMNS: PlaylistsListSort[] = ["name", "lastSpotifyPublishAt"];
 
 function parseSort(sortParam: string | undefined): PlaylistsListSort {
   if (sortParam && SORT_COLUMNS.includes(sortParam as PlaylistsListSort))
@@ -93,7 +93,7 @@ export default async function Playlists({
 
   function nextOrder(col: PlaylistsListSort): PlaylistsListOrder {
     if (col === sort) return order === "asc" ? "desc" : "asc";
-    return col === "name" || col === "spotifyId" ? "asc" : "desc";
+    return col === "name" ? "asc" : "desc";
   }
 
   function pageForSort(col: PlaylistsListSort) {
@@ -247,24 +247,10 @@ export default async function Playlists({
                 playlistId: openPlaylistId,
                 q,
               })}
-              spotifySortHref={buildPlaylistsUrl({
-                page: pageForSort("spotifyId"),
-                sort: "spotifyId",
-                order: nextOrder("spotifyId"),
-                playlistId: openPlaylistId,
-                q,
-              })}
-              maxFollowersSortHref={buildPlaylistsUrl({
-                page: pageForSort("maxFollowers"),
-                sort: "maxFollowers",
-                order: nextOrder("maxFollowers"),
-                playlistId: openPlaylistId,
-                q,
-              })}
-              sizeSortHref={buildPlaylistsUrl({
-                page: pageForSort("size"),
-                sort: "size",
-                order: nextOrder("size"),
+              lastPublishedSortHref={buildPlaylistsUrl({
+                page: pageForSort("lastSpotifyPublishAt"),
+                sort: "lastSpotifyPublishAt",
+                order: nextOrder("lastSpotifyPublishAt"),
                 playlistId: openPlaylistId,
                 q,
               })}
