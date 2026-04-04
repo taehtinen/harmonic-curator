@@ -15,7 +15,8 @@
     "seed:artist-catalog": "tsx scripts/seed-artist-catalog.ts",
     "seed:top-tracks": "tsx scripts/seed-top-tracks.ts",
     "seed:playlist-tracks": "tsx scripts/seed-playlist-tracks.ts",
-    "seed:create-user": "tsx scripts/seed-create-user.ts"
+    "seed:create-user": "tsx scripts/seed-create-user.ts",
+    "seed:update-user": "tsx scripts/seed-update-user.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.1.0",

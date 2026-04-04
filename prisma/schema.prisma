@@ -12,12 +12,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserStatus {
+  USER
+  ADMIN
+}
+
 model User {
-  id           BigInt   @id @default(autoincrement())
-  username     String   @unique
+  id           BigInt     @id @default(autoincrement())
+  username     String     @unique
   passwordHash String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  status       UserStatus @default(USER)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   @@map("user")
 }
