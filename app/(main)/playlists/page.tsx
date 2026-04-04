@@ -8,6 +8,7 @@ export default function PlaylistsPage({
     sort?: string;
     order?: string;
     q?: string;
+    playlist?: string;
   }>;
 }) {
   return <Playlists searchParams={searchParams} />;
