@@ -6,6 +6,55 @@ import {
   type SpotifyTrack,
 } from "@/lib/spotifyClient";
 
+function parseSeedArgs(argv: string[]) {
+  let ownerUserIdFromFlag: string | undefined;
+  const positionals: string[] = [];
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === "--user-id") {
+      const v = argv[++i];
+      if (!v || v.startsWith("-")) {
+        console.error("--user-id requires a database user id (e.g. 1).");
+        return null;
+      }
+      ownerUserIdFromFlag = v;
+    } else if (a.startsWith("-")) {
+      console.error(`Unknown option: ${a}`);
+      return null;
+    } else {
+      positionals.push(a);
+    }
+  }
+
+  const raw = positionals[0];
+  if (!raw?.trim()) return null;
+
+  const ownerUserIdStr =
+    ownerUserIdFromFlag ?? process.env.PLAYLIST_OWNER_USER_ID?.trim();
+  if (!ownerUserIdStr) {
+    console.error(
+      "Required: --user-id <dbUserId> or environment variable PLAYLIST_OWNER_USER_ID.",
+    );
+    return null;
+  }
+
+  let ownerUserId: bigint;
+  try {
+    ownerUserId = BigInt(ownerUserIdStr);
+  } catch {
+    console.error(
+      "Invalid --user-id or PLAYLIST_OWNER_USER_ID (must be an integer).",
+    );
+    return null;
+  }
+  if (ownerUserId < BigInt(1)) {
+    console.error("user id must be >= 1.");
+    return null;
+  }
+
+  return { raw: raw.trim(), ownerUserId };
+}
+
 function normalizeSpotifyPlaylistId(raw: string): string {
   const s = raw.trim();
   const uri = /^spotify:playlist:(.+)$/.exec(s);
@@ -200,15 +249,19 @@ async function ensureTrackInDb(
 }
 
 async function main() {
-  const raw = process.argv[2];
-  if (!raw) {
+  const parsed = parseSeedArgs(process.argv.slice(2));
+  if (!parsed) {
     console.error(
-      "Usage: tsx scripts/seed-playlist-tracks.ts <spotifyPlaylistId|spotify:playlist:…|open.spotify.com/playlist/…>",
+      "Usage: tsx scripts/seed-playlist-tracks.ts <spotifyPlaylistId|spotify:playlist:…|open.spotify.com/playlist/…> --user-id <dbUserId>",
+    );
+    console.error(
+      "Or set PLAYLIST_OWNER_USER_ID. Required when creating a new playlist row.",
     );
     process.exitCode = 1;
     return;
   }
 
+  const { raw, ownerUserId } = parsed;
   const playlistSpotifyId = normalizeSpotifyPlaylistId(raw);
   const spotifyClient = new SpotifyClient();
 
@@ -220,6 +273,7 @@ async function main() {
     const meta = await spotifyClient.getPlaylist(playlistSpotifyId);
     playlist = await prisma.playlist.create({
       data: {
+        userId: ownerUserId,
         spotifyId: meta.id,
         name: meta.name,
         description: meta.description ?? "",

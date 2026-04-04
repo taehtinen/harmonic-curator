@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser, userIsAdmin } from "@/lib/auth";
+import { requireUser, userIsAdmin } from "@/lib/auth";
 import { replacePlaylistTracksFromDbCriteria } from "@/lib/playlist-generate-from-criteria";
 import PlaylistSidebar from "@/components/playlist-sidebar";
 import PlaylistsTable from "@/components/playlists-table";
@@ -50,14 +50,20 @@ export default async function Playlists({
   const order = parseOrder(orderParam);
   const rawPage = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
 
-  const listWhere = q
-    ? {
-        name: {
-          contains: q,
-          mode: "insensitive" as const,
-        },
-      }
-    : {};
+  const sessionUser = await requireUser();
+  const ownerUserId = BigInt(sessionUser.id);
+
+  const listWhere = {
+    userId: ownerUserId,
+    ...(q
+      ? {
+          name: {
+            contains: q,
+            mode: "insensitive" as const,
+          },
+        }
+      : {}),
+  };
 
   const total = await prisma.playlist.count({ where: listWhere });
   const totalPages = Math.ceil(total / PLAYLISTS_PER_PAGE);
@@ -90,7 +96,7 @@ export default async function Playlists({
     playlistParam && /^\d+$/.test(playlistParam) ? BigInt(playlistParam) : null;
   const selectedPlaylist = selectedPlaylistIdParam
     ? await prisma.playlist.findFirst({
-        where: { id: selectedPlaylistIdParam },
+        where: { id: selectedPlaylistIdParam, userId: ownerUserId },
         include: {
           playlistTracks: {
             orderBy: { position: "asc" },
@@ -131,8 +137,8 @@ export default async function Playlists({
   async function generatePlaylistFromCriteria(formData: FormData) {
     "use server";
 
-    const user = await getCurrentUser();
-    if (!userIsAdmin(user)) {
+    const actingUser = await requireUser();
+    if (!userIsAdmin(actingUser)) {
       throw new Error("Only admins can generate playlists.");
     }
 
@@ -146,7 +152,16 @@ export default async function Playlists({
       throw new Error("Invalid playlist id.");
     }
 
-    await replacePlaylistTracksFromDbCriteria(BigInt(playlistIdValue));
+    const playlistId = BigInt(playlistIdValue);
+    const owned = await prisma.playlist.findFirst({
+      where: { id: playlistId, userId: BigInt(actingUser.id) },
+      select: { id: true },
+    });
+    if (!owned) {
+      throw new Error("Playlist not found.");
+    }
+
+    await replacePlaylistTracksFromDbCriteria(playlistId);
     redirect(returnToValue);
   }
 
