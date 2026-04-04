@@ -11,6 +11,7 @@ export default function ArtistSidebar({
   returnToHref,
   canAddGenre,
   addGenreAction,
+  removeGenreAction,
   addGenreReturnToHref,
   artistsHrefContext,
 }: {
@@ -21,6 +22,7 @@ export default function ArtistSidebar({
   returnToHref: string;
   canAddGenre: boolean;
   addGenreAction: (formData: FormData) => Promise<void>;
+  removeGenreAction: (formData: FormData) => Promise<void>;
   addGenreReturnToHref: string;
   artistsHrefContext: ArtistsHrefContext;
 }) {
@@ -34,6 +36,7 @@ export default function ArtistSidebar({
         returnToHref={returnToHref}
         canAddGenre={canAddGenre}
         addGenreAction={addGenreAction}
+        removeGenreAction={removeGenreAction}
         addGenreReturnToHref={addGenreReturnToHref}
       />
       <ArtistSidebarPanel artist={artist} artistsHrefContext={artistsHrefContext} />

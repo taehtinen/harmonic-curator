@@ -282,6 +282,45 @@ export default async function Artists({
     redirect(returnToValue);
   }
 
+  async function removeArtistGenre(formData: FormData) {
+    "use server";
+
+    const user = await getCurrentUser();
+    if (!userIsAdmin(user)) {
+      throw new Error("Only admins can remove genres.");
+    }
+
+    const artistIdValue = formData.get("artistId");
+    const genreValue = formData.get("genre");
+    const returnToValue = formData.get("returnTo");
+    if (
+      typeof artistIdValue !== "string" ||
+      typeof genreValue !== "string" ||
+      typeof returnToValue !== "string"
+    ) {
+      throw new Error("Invalid remove genre request payload.");
+    }
+
+    const artistRecord = await prisma.artist.findUnique({
+      where: { id: BigInt(artistIdValue) },
+    });
+    if (!artistRecord) {
+      throw new Error("Artist not found.");
+    }
+
+    const nextGenres = artistRecord.genres.filter((g) => g !== genreValue);
+    if (nextGenres.length === artistRecord.genres.length) {
+      redirect(returnToValue);
+    }
+
+    await prisma.artist.update({
+      where: { id: BigInt(artistIdValue) },
+      data: { genres: nextGenres },
+    });
+
+    redirect(returnToValue);
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-zinc-50 font-sans dark:bg-black">
       <main className="flex min-h-0 w-full max-w-none flex-1 flex-col gap-4 overflow-hidden bg-white px-6 py-4 text-zinc-900 dark:bg-black dark:text-zinc-50">
@@ -402,6 +441,7 @@ export default async function Artists({
               returnToHref={closeArtistHref}
               canAddGenre={canIgnoreArtists}
               addGenreAction={addArtistGenre}
+              removeGenreAction={removeArtistGenre}
               addGenreReturnToHref={buildArtistsUrl({
                 page,
                 sort,
