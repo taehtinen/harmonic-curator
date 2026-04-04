@@ -14,10 +14,12 @@
     "seed:artist": "tsx scripts/seed-artist.ts",
     "seed:artist-catalog": "tsx scripts/seed-artist-catalog.ts",
     "seed:top-tracks": "tsx scripts/seed-top-tracks.ts",
-    "seed:playlist-tracks": "tsx scripts/seed-playlist-tracks.ts"
+    "seed:playlist-tracks": "tsx scripts/seed-playlist-tracks.ts",
+    "seed:create-user": "tsx scripts/seed-create-user.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.1.0",
+    "argon2": "^0.44.0",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3"

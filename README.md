@@ -18,7 +18,7 @@ Internal tool for pulling **Spotify** metadata into **PostgreSQL**, browsing **a
 - **Add genre**: Append a normalized genre string to an artist (admin-only server action).
 - **Playlists**: Paginated, searchable list with sortable name, Spotify ID, max followers, and size.
 - **Playlist sidebar**: Link to Spotify, criteria (genres, max followers, target size), timestamps (**last track edit**, **last Spotify publish**), and ordered **tracks**. **Generate playlist** (admin-only): Rebuilds local `playlist_track` rows from the DB using the playlist’s genres and follower cap—one track per non-ignored artist, preferring newer albums and higher popularity. This updates **local state only**; it does not push the new order to Spotify (use your own automation or future tooling for that).
-- **Auth**: [`lib/auth.ts`](lib/auth.ts) is a stub that always returns a mock admin user until real authentication exists.
+- **Auth**: [`lib/auth.ts`](lib/auth.ts) is a stub that always returns a mock admin user until real authentication exists. The [`User`](prisma/schema.prisma) table and [`seed:create-user`](#npm-scripts) CLI exist for future login; passwords are stored as Argon2id hashes ([`lib/password.ts`](lib/password.ts)).
 
 ## Data model
 
@@ -30,6 +30,7 @@ Defined in [`prisma/schema.prisma`](prisma/schema.prisma):
 - **TrackArtist** — Many-to-many credits between tracks and artists (e.g. features)
 - **Playlist** — `spotifyId`, `name`, `description`, `genres[]`, `maxFollowers`, `size`, `lastTrackEditAt`, `lastSpotifyPublishAt`
 - **PlaylistTrack** — Ordered membership: `playlistId`, `trackId`, `position`
+- **User** — `username`, `passwordHash` (Argon2id); used with `seed:create-user` until app login is implemented
 
 Top-track syncing is incremental: `seed-top-tracks` sets `topTracksRefreshedAt` and prefers artists that have never been refreshed or are stale (default: older than 24 hours).
 
@@ -80,6 +81,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run seed:artist-catalog -- <id-or-url>` | Upsert one artist and sync **albums and tracks** from Spotify (full catalog pass for that artist) |
 | `npm run seed:top-tracks` | Batch-fetch top tracks for artists missing or stale refresh; upserts **albums** and **tracks** |
 | `npm run seed:playlist-tracks -- <id-or-url>` | Create or update a **playlist** row, import track order from Spotify, ensure artists/tracks in DB, and rewrite local `playlist_track` rows |
+| `npm run seed:create-user -- <username>` | Upsert a **user** row. **Interactive terminal only**: prints `Password: ` on stderr, reads one line (Enter). Stdin may echo; run from a real TTY. Re-running updates `passwordHash`. |
 
 Typical flow: configure `.env` → migrate → `seed:artists` and/or `seed:artist` → `seed:top-tracks` (and optionally `seed:artist-catalog` for deep catalogs) → `seed:playlist-tracks` for each Spotify playlist you want in the app → set playlist **genres** / **maxFollowers** / **size** in the database as needed → use **Generate playlist** in the UI for local reordering from criteria → use the web UI.
 
