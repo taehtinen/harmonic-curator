@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import SignOutButton from "@/components/sign-out-button";
+
 const tabs = [
   { href: "/", label: "Artists" },
   { href: "/playlists", label: "Playlists" },
@@ -21,7 +23,7 @@ export default function MainNav() {
       className="shrink-0 border-b border-zinc-200 bg-white px-6 py-3 dark:border-zinc-800 dark:bg-zinc-950"
       aria-label="Main menu"
     >
-      <div className="flex gap-1">
+      <div className="flex flex-wrap items-center gap-1">
         {tabs.map(({ href, label }) => {
           const active = isActive(pathname, href);
           return (
@@ -39,6 +41,7 @@ export default function MainNav() {
             </Link>
           );
         })}
+        <SignOutButton />
       </div>
     </nav>
   );

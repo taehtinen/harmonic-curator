@@ -1,16 +1,24 @@
+import { UserStatus } from "@prisma/client";
 import { redirect } from "next/navigation";
+
+import { auth } from "@/auth";
 
 export type CurrentUser = {
   id: string;
-  roles: string[];
+  status: UserStatus;
 };
 
 /**
- * Resolve the signed-in user, or null when there is no session.
- * Replace this with real session/cookie/JWT lookup when login is implemented.
+ * Resolve the signed-in user from the NextAuth session, or null when anonymous.
  */
 export async function getCurrentUser(): Promise<CurrentUser | null> {
-  return null;
+  const session = await auth();
+  const id = session?.user?.id;
+  if (!id) return null;
+  return {
+    id,
+    status: session.user.status,
+  };
 }
 
 /**
@@ -25,5 +33,5 @@ export async function requireUser(): Promise<CurrentUser> {
 }
 
 export function userIsAdmin(user: CurrentUser | null): boolean {
-  return Boolean(user?.roles.includes("admin"));
+  return user?.status === UserStatus.ADMIN;
 }
