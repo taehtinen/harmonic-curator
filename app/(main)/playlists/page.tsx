@@ -9,6 +9,8 @@ export default function PlaylistsPage({
     order?: string;
     q?: string;
     playlist?: string;
+    publish?: string;
+    publish_err?: string;
   }>;
 }) {
   return <Playlists searchParams={searchParams} />;

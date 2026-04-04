@@ -1,6 +1,9 @@
 import PlaylistSidebarDetails from "@/components/playlist-sidebar-details";
 import PlaylistSidebarTracksTable from "@/components/playlist-sidebar-tracks-table";
-import type { PlaylistWithSidebarTracks } from "@/components/playlist-sidebar-types";
+import type {
+  PlaylistWithSidebarTracks,
+  PublishFlash,
+} from "@/components/playlist-sidebar-types";
 import type { ArtistsHrefContext } from "@/lib/artists-url";
 
 export default function PlaylistSidebar({
@@ -8,12 +11,18 @@ export default function PlaylistSidebar({
   closeHref,
   generatePlaylistAction,
   generatePlaylistReturnToHref,
+  publishPlaylistAction,
+  hasLinkedSpotify,
+  publishFlash,
   artistsHrefContext,
 }: {
   playlist: PlaylistWithSidebarTracks;
   closeHref: string;
   generatePlaylistAction: (formData: FormData) => Promise<void>;
   generatePlaylistReturnToHref: string;
+  publishPlaylistAction: (formData: FormData) => Promise<void>;
+  hasLinkedSpotify: boolean;
+  publishFlash: PublishFlash;
   artistsHrefContext: ArtistsHrefContext;
 }) {
   return (
@@ -23,6 +32,9 @@ export default function PlaylistSidebar({
         closeHref={closeHref}
         generatePlaylistAction={generatePlaylistAction}
         generatePlaylistReturnToHref={generatePlaylistReturnToHref}
+        publishPlaylistAction={publishPlaylistAction}
+        hasLinkedSpotify={hasLinkedSpotify}
+        publishFlash={publishFlash}
       />
       <section className="flex min-h-0 flex-1 flex-col border-t border-zinc-200 dark:border-zinc-800">
         <h3 className="shrink-0 px-5 pt-4 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">

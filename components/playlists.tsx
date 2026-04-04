@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUser, userIsAdmin } from "@/lib/auth";
 import { replacePlaylistTracksFromDbCriteria } from "@/lib/playlist-generate-from-criteria";
+import { publishPlaylistTracksForUser } from "@/lib/spotify-playlist-publish";
 import PlaylistSidebar from "@/components/playlist-sidebar";
 import PlaylistsTable from "@/components/playlists-table";
 import {
@@ -36,6 +37,8 @@ export default async function Playlists({
     order?: string;
     q?: string;
     playlist?: string;
+    publish?: string;
+    publish_err?: string;
   }>;
 }) {
   const {
@@ -44,6 +47,8 @@ export default async function Playlists({
     order: orderParam,
     q: qParam,
     playlist: playlistParam,
+    publish: publishParam,
+    publish_err: publishErrParam,
   } = await searchParams;
   const q = (qParam ?? "").trim();
   const sort = parseSort(sortParam);
@@ -52,6 +57,14 @@ export default async function Playlists({
 
   const sessionUser = await requireUser();
   const ownerUserId = BigInt(sessionUser.id);
+
+  const linkedSpotifyCount = await prisma.userSpotifyAccount.count({
+    where: { userId: ownerUserId },
+  });
+  const hasLinkedSpotify = linkedSpotifyCount > 0;
+
+  const publishOk = publishParam === "1";
+  const publishErr = publishErrParam?.trim() ?? null;
 
   const listWhere = {
     userId: ownerUserId,
@@ -165,6 +178,45 @@ export default async function Playlists({
     redirect(returnToValue);
   }
 
+  async function publishPlaylistToSpotify(formData: FormData) {
+    "use server";
+
+    const actingUser = await requireUser();
+    const playlistIdValue = formData.get("playlistId");
+    const returnToValue = formData.get("returnTo");
+    if (typeof playlistIdValue !== "string" || typeof returnToValue !== "string") {
+      throw new Error("Invalid publish request payload.");
+    }
+
+    if (!/^\d+$/.test(playlistIdValue)) {
+      throw new Error("Invalid playlist id.");
+    }
+
+    const playlistDbId = BigInt(playlistIdValue);
+    const owned = await prisma.playlist.findFirst({
+      where: { id: playlistDbId, userId: BigInt(actingUser.id) },
+      select: { id: true },
+    });
+    if (!owned) {
+      throw new Error("Playlist not found.");
+    }
+
+    const result = await publishPlaylistTracksForUser({
+      appUserId: BigInt(actingUser.id),
+      playlistDbId,
+    });
+
+    const flashUrl = new URL(returnToValue, "http://localhost");
+    flashUrl.searchParams.delete("publish");
+    flashUrl.searchParams.delete("publish_err");
+    if (result.ok) {
+      flashUrl.searchParams.set("publish", "1");
+    } else {
+      flashUrl.searchParams.set("publish_err", result.message.slice(0, 400));
+    }
+    redirect(`${flashUrl.pathname}${flashUrl.search}`);
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-zinc-50 font-sans dark:bg-black">
       <main className="flex min-h-0 w-full max-w-none flex-1 flex-col gap-4 overflow-hidden bg-white px-6 py-4 text-zinc-900 dark:bg-black dark:text-zinc-50">
@@ -272,6 +324,15 @@ export default async function Playlists({
               closeHref={closePlaylistHref}
               generatePlaylistAction={generatePlaylistFromCriteria}
               generatePlaylistReturnToHref={playlistPanelReturnToHref}
+              publishPlaylistAction={publishPlaylistToSpotify}
+              hasLinkedSpotify={hasLinkedSpotify}
+              publishFlash={
+                publishOk
+                  ? { kind: "ok" }
+                  : publishErr
+                    ? { kind: "error", message: publishErr }
+                    : null
+              }
               artistsHrefContext={artistsHrefContext}
             />
           )}

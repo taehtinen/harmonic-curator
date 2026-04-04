@@ -3,19 +3,11 @@
 import { useFormStatus } from "react-dom";
 
 import { unlinkSpotifyAccount } from "@/app/(main)/settings/actions";
+import ConfirmSubmitButton from "@/components/confirm-submit-button";
 
-function SubmitButton({ ariaLabel }: { ariaLabel: string }) {
+function RemoveLabel() {
   const { pending } = useFormStatus();
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      aria-label={ariaLabel}
-      className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-60 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/40"
-    >
-      {pending ? "Removing…" : "Remove"}
-    </button>
-  );
+  return <>{pending ? "Removing…" : "Remove"}</>;
 }
 
 export default function UnlinkSpotifyAccountForm({
@@ -28,21 +20,15 @@ export default function UnlinkSpotifyAccountForm({
   const removeAria = `Remove linked Spotify account ${accountLabel}`;
 
   return (
-    <form
-      action={unlinkSpotifyAccount}
-      className="inline"
-      onSubmit={(e) => {
-        if (
-          !confirm(
-            `Remove Spotify account?`,
-          )
-        ) {
-          e.preventDefault();
-        }
-      }}
-    >
+    <form action={unlinkSpotifyAccount} className="inline">
       <input type="hidden" name="accountId" value={accountId} />
-      <SubmitButton ariaLabel={removeAria} />
+      <ConfirmSubmitButton
+        confirmMessage={`Remove linked Spotify account “${accountLabel}”? You can link again later from Settings.`}
+        aria-label={removeAria}
+        className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-60 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/40"
+      >
+        <RemoveLabel />
+      </ConfirmSubmitButton>
     </form>
   );
 }

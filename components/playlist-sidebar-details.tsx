@@ -1,5 +1,6 @@
 import Link from "next/link";
 import SpotifyIcon from "@/components/spotify-icon";
+import type { PublishFlash } from "@/components/playlist-sidebar-types";
 import type { Playlist } from "@prisma/client";
 
 function formatDateTime(value: Date) {
@@ -18,11 +19,17 @@ export default function PlaylistSidebarDetails({
   closeHref,
   generatePlaylistAction,
   generatePlaylistReturnToHref,
+  publishPlaylistAction,
+  hasLinkedSpotify,
+  publishFlash,
 }: {
   playlist: Playlist;
   closeHref: string;
   generatePlaylistAction: (formData: FormData) => Promise<void>;
   generatePlaylistReturnToHref: string;
+  publishPlaylistAction: (formData: FormData) => Promise<void>;
+  hasLinkedSpotify: boolean;
+  publishFlash: PublishFlash;
 }) {
   return (
     <section className="shrink-0 p-5">
@@ -96,12 +103,12 @@ export default function PlaylistSidebarDetails({
 
         <dl className="shrink-0 space-y-3 border-zinc-200 text-sm sm:w-52 sm:border-l sm:pl-6 dark:border-zinc-700">
           <div>
-            <dt className="text-zinc-500 dark:text-zinc-400">Updated</dt>
+            <dt className="text-zinc-500 dark:text-zinc-400">Last edited</dt>
             <dd className="mt-0.5 tabular-nums text-zinc-800 dark:text-zinc-200">
-              {formatDateTime(playlist.updatedAt)}
+              {formatDateTimeOrDash(playlist.lastTrackEditAt)}
             </dd>
           </div>
-          <div>
+          <div className="space-y-2">
             <form action={generatePlaylistAction} className="mt-1">
               <input type="hidden" name="playlistId" value={playlist.id.toString()} />
               <input type="hidden" name="returnTo" value={generatePlaylistReturnToHref} />
@@ -114,16 +121,44 @@ export default function PlaylistSidebarDetails({
             </form>
           </div>
           <div>
-            <dt className="text-zinc-500 dark:text-zinc-400">Last edited</dt>
-            <dd className="mt-0.5 tabular-nums text-zinc-800 dark:text-zinc-200">
-              {formatDateTimeOrDash(playlist.lastTrackEditAt)}
-            </dd>
-          </div>
-          <div>
             <dt className="text-zinc-500 dark:text-zinc-400">Last published</dt>
             <dd className="mt-0.5 tabular-nums text-zinc-800 dark:text-zinc-200">
               {formatDateTimeOrDash(playlist.lastSpotifyPublishAt)}
             </dd>
+          </div>
+          <div className="space-y-2">
+            <form action={publishPlaylistAction} className="mt-1">
+              <input type="hidden" name="playlistId" value={playlist.id.toString()} />
+              <input type="hidden" name="returnTo" value={generatePlaylistReturnToHref} />
+              <button
+                type="submit"
+                disabled={!hasLinkedSpotify}
+                title={
+                  hasLinkedSpotify
+                    ? undefined
+                    : "Link a Spotify account in Settings to publish."
+                }
+                className="w-full rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              >
+                Publish to Spotify
+              </button>
+            </form>
+            {publishFlash?.kind === "ok" ? (
+              <p
+                className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-2 text-xs leading-snug text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100"
+                role="status"
+              >
+                Spotify playlist updated to match your local track list.
+              </p>
+            ) : null}
+            {publishFlash?.kind === "error" ? (
+              <p
+                className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-2 text-xs leading-snug text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-100"
+                role="alert"
+              >
+                Could not publish to Spotify: {publishFlash.message}
+              </p>
+            ) : null}
           </div>
         </dl>
       </div>

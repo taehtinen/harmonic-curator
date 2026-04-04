@@ -252,7 +252,7 @@ export class SpotifyClient {
   }
 
   public async addTracksToPlaylist(playlistId: string, trackIds: string[]): Promise<void> {
-    const url = `https://api.spotify.com/v1/playlists/${playlistId}/tracks`;
+    const url = `https://api.spotify.com/v1/playlists/${playlistId}/items`;
     const body = {
       uris: trackIds.map(id => `spotify:track:${id}`),
     };
@@ -384,19 +384,24 @@ export class SpotifyClient {
   }
 
   public async removeAllTracksFromPlaylist(playlistId: string): Promise<number> {
-    const getUrl = `https://api.spotify.com/v1/playlists/${playlistId}/tracks?market=${this.spotifyMarket}`;
+    const getUrl = `https://api.spotify.com/v1/playlists/${playlistId}/items?market=${this.spotifyMarket}`;
     let totalRemoved = 0;
     while (true) {
-      const getData = await this.fetch<{ items: { track: { uri: string } }[]; total: number }>('GET', getUrl);
-      const trackUris = getData.items.map(item => item.track.uri);
+      const getData = await this.fetch<{
+        items: { track?: { uri: string } | null; item?: { uri?: string } | null }[];
+        total: number;
+      }>("GET", getUrl);
+      const trackUris = getData.items
+        .map((row) => row.item?.uri ?? row.track?.uri)
+        .filter((u): u is string => Boolean(u));
       if (trackUris.length === 0) {
         break;
       }
-      const removeUrl = `https://api.spotify.com/v1/playlists/${playlistId}/tracks`;
+      const removeUrl = `https://api.spotify.com/v1/playlists/${playlistId}/items`;
       const body = {
-        tracks: trackUris.map(uri => ({ uri })),
+        items: trackUris.map((uri) => ({ uri })),
       };
-      await this.fetch<SpotifySnapshotResponse>('DELETE', removeUrl, body);
+      await this.fetch<SpotifySnapshotResponse>("DELETE", removeUrl, body);
       totalRemoved += trackUris.length;
       console.log(`Removed ${trackUris.length} tracks from playlist ${playlistId}`);
     }
@@ -462,7 +467,7 @@ export class SpotifyClient {
   }
 
   /**
-   * All playlist track items in order (paginated GET /v1/playlists/{id}/tracks).
+   * All playlist track items in order (paginated GET /v1/playlists/{id}/items).
    * Rows without a usable Spotify track id (episode, removed, local) are skipped.
    */
   public async getPlaylistTrackIds(playlistId: string): Promise<string[]> {
@@ -476,9 +481,9 @@ export class SpotifyClient {
   public async getPlaylistTrackIdsWithLatestAdded(
     playlistId: string,
   ): Promise<{ ids: string[]; latestTrackAddedAt: Date | null }> {
-    const limit = 100;
+    const limit = 50;
     let url: string | null =
-      `https://api.spotify.com/v1/playlists/${playlistId}/tracks?market=${this.spotifyMarket}&limit=${limit}`;
+      `https://api.spotify.com/v1/playlists/${playlistId}/items?market=${this.spotifyMarket}&limit=${limit}`;
     const ids: string[] = [];
     let maxAddedMs = 0;
 

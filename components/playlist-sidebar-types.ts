@@ -11,3 +11,8 @@ export type PlaylistSidebarTrackRow = PlaylistTrack & {
 export type PlaylistWithSidebarTracks = Playlist & {
   playlistTracks: PlaylistSidebarTrackRow[];
 };
+
+export type PublishFlash =
+  | { kind: "ok" }
+  | { kind: "error"; message: string }
+  | null;

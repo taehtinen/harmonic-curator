@@ -2,7 +2,8 @@ const ACCOUNTS_BASE = "https://accounts.spotify.com";
 const API_BASE = "https://api.spotify.com/v1";
 
 export const DEFAULT_SPOTIFY_USER_SCOPES = [
-  "playlist-modify-public"
+  "playlist-modify-public",
+  "playlist-modify-private",
 ].join(" ");
 
 export interface SpotifyTokenResponse {
