@@ -271,7 +271,7 @@ export default async function Artists({
     }
 
     if (artistRecord.genres.some((g) => g.toLowerCase() === normalized)) {
-      redirect(returnToValue);
+      throw new Error("Genre already exists for this artist.");
     }
 
     await prisma.artist.update({
@@ -308,9 +308,16 @@ export default async function Artists({
       throw new Error("Artist not found.");
     }
 
-    const nextGenres = artistRecord.genres.filter((g) => g !== genreValue);
+    const normalizedRemove = genreValue.trim().toLowerCase();
+    if (!normalizedRemove) {
+      throw new Error("Genre cannot be empty.");
+    }
+
+    const nextGenres = artistRecord.genres.filter(
+      (g) => g.toLowerCase() !== normalizedRemove,
+    );
     if (nextGenres.length === artistRecord.genres.length) {
-      redirect(returnToValue);
+      throw new Error("Genre not found for this artist.");
     }
 
     await prisma.artist.update({

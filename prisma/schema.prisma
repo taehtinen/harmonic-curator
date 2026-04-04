@@ -25,9 +25,33 @@ model User {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
-  playlists Playlist[]
+  playlists           Playlist[]
+  spotifyAccounts     UserSpotifyAccount[]
 
   @@map("user")
+}
+
+/**
+ * Linked Spotify OAuth identities for an app user (multiple accounts per user).
+ * Tokens are AES-256-GCM ciphertext (see lib/token-crypto.ts); never store plaintext.
+ */
+model UserSpotifyAccount {
+  id                   BigInt    @id @default(autoincrement())
+  userId               BigInt
+  spotifyUserId        String
+  refreshTokenEnc      String
+  accessTokenEnc       String?
+  accessTokenExpiresAt DateTime?
+  scope                String
+  displayName          String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, spotifyUserId])
+  @@index([userId])
+  @@map("user_spotify_account")
 }
 
 model Artist {

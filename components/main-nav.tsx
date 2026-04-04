@@ -5,18 +5,27 @@ import { usePathname } from "next/navigation";
 
 import SignOutButton from "@/components/sign-out-button";
 
-const tabs = [
+const mainTabs = [
   { href: "/", label: "Artists" },
   { href: "/playlists", label: "Playlists" },
 ] as const;
+
+const settingsTab = { href: "/settings", label: "Settings" } as const;
 
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function navLinkClass(active: boolean) {
+  return active
+    ? "rounded-lg bg-zinc-100 px-4 py-2 text-sm font-medium uppercase tracking-wide text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50"
+    : "rounded-lg px-4 py-2 text-sm font-medium uppercase tracking-wide text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-200";
+}
+
 export default function MainNav() {
   const pathname = usePathname();
+  const settingsActive = isActive(pathname, settingsTab.href);
 
   return (
     <nav
@@ -24,24 +33,31 @@ export default function MainNav() {
       aria-label="Main menu"
     >
       <div className="flex flex-wrap items-center gap-1">
-        {tabs.map(({ href, label }) => {
-          const active = isActive(pathname, href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              aria-current={active ? "page" : undefined}
-              className={
-                active
-                  ? "rounded-lg bg-zinc-100 px-4 py-2 text-sm font-medium uppercase tracking-wide text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50"
-                  : "rounded-lg px-4 py-2 text-sm font-medium uppercase tracking-wide text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-200"
-              }
-            >
-              {label}
-            </Link>
-          );
-        })}
-        <SignOutButton />
+        <div className="flex flex-wrap items-center gap-1">
+          {mainTabs.map(({ href, label }) => {
+            const active = isActive(pathname, href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                aria-current={active ? "page" : undefined}
+                className={navLinkClass(active)}
+              >
+                {label}
+              </Link>
+            );
+          })}
+        </div>
+        <div className="ml-auto flex flex-wrap items-center gap-1">
+          <Link
+            href={settingsTab.href}
+            aria-current={settingsActive ? "page" : undefined}
+            className={navLinkClass(settingsActive)}
+          >
+            {settingsTab.label}
+          </Link>
+          <SignOutButton />
+        </div>
       </div>
     </nav>
   );
