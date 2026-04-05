@@ -9,17 +9,30 @@ export async function fetchTrackIdsMatchingPlaylistCriteria(
   genres: string[],
   maxFollowers: number | null,
   size: number,
+  artistIds: string[],
 ): Promise<bigint[]> {
   const normalizedGenres = normalizePlaylistGenres(genres);
   const limit = Math.max(0, size);
   if (limit === 0) return [];
 
+  const restrictToArtists = artistIds.length > 0;
+  const artistIdFilter = restrictToArtists
+    ? { id: { in: artistIds.map((s) => BigInt(s)) } }
+    : {};
+
+  const followerAndGenreFilters = restrictToArtists
+    ? {}
+    : {
+        ...(maxFollowers != null ? { followers: { lte: maxFollowers } } : {}),
+        ...(normalizedGenres.length > 0 ? { genres: { hasSome: normalizedGenres } } : {}),
+      };
+
   const tracks = await prisma.track.findMany({
     where: {
       artist: {
         isIgnored: false,
-        ...(maxFollowers != null ? { followers: { lte: maxFollowers } } : {}),
-        ...(normalizedGenres.length > 0 ? { genres: { hasSome: normalizedGenres } } : {}),
+        ...artistIdFilter,
+        ...followerAndGenreFilters,
       },
     },
     select: { id: true, artistId: true },
@@ -45,13 +58,14 @@ export async function fetchTrackIdsMatchingPlaylistCriteria(
 export async function replacePlaylistTracksFromDbCriteria(playlistDbId: bigint): Promise<void> {
   const playlist = await prisma.playlist.findUniqueOrThrow({
     where: { id: playlistDbId },
-    select: { id: true, genres: true, maxFollowers: true, size: true },
+    select: { id: true, genres: true, maxFollowers: true, size: true, artistIds: true },
   });
 
   const trackIds = await fetchTrackIdsMatchingPlaylistCriteria(
     playlist.genres,
     playlist.maxFollowers,
     playlist.size,
+    playlist.artistIds ?? [],
   );
 
   await prisma.$transaction(async (tx) => {

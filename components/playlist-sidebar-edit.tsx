@@ -1,10 +1,13 @@
 import Link from "next/link";
 import PlaylistDetailsForm from "@/components/playlist-details-form";
 
+import type { PlaylistArtistTag } from "@/components/playlist-artist-picker";
+
 export default function PlaylistSidebarEdit({
   playlistId,
   defaultName,
   defaultDescription,
+  defaultArtists,
   defaultMaxFollowers,
   cancelHref,
   savePlaylistDetailsAction,
@@ -13,6 +16,7 @@ export default function PlaylistSidebarEdit({
   playlistId: string;
   defaultName: string;
   defaultDescription: string;
+  defaultArtists: PlaylistArtistTag[];
   defaultMaxFollowers: number | null;
   cancelHref: string;
   savePlaylistDetailsAction: (formData: FormData) => Promise<void>;
@@ -33,11 +37,13 @@ export default function PlaylistSidebarEdit({
 
         <div className="mt-6">
           <PlaylistDetailsForm
+            key={playlistId}
             action={savePlaylistDetailsAction}
             returnTo={saveReturnTo}
             playlistId={playlistId}
             defaultName={defaultName}
             defaultDescription={defaultDescription}
+            defaultArtists={defaultArtists}
             defaultMaxFollowers={defaultMaxFollowers}
             submitLabel="Save changes"
             idPrefix="edit"

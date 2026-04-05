@@ -133,6 +133,8 @@ model Playlist {
   name           String
   description    String   @default("")
   genres         String[]
+  /** Internal `artist.id` values (decimal strings) limiting curation to these artists when non-empty. */
+  artistIds      String[] @default([])
   maxFollowers   Int?
   size           Int
   /** Last time local `playlist_track` rows were written (reorder/add/remove, including import seed). */

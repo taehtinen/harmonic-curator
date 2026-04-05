@@ -15,6 +15,7 @@ import {
   type PlaylistsListSort,
 } from "@/lib/playlists-url";
 import type { ArtistsHrefContext } from "@/lib/artists-url";
+import type { PlaylistArtistTag } from "@/components/playlist-artist-picker";
 
 const PLAYLISTS_PER_PAGE = 100;
 
@@ -32,6 +33,45 @@ function parseOrder(orderParam: string | undefined): PlaylistsListOrder {
 }
 
 const MAX_PG_INT = 2147483647;
+
+async function resolvePlaylistArtistTags(
+  artistIds: string[] | undefined | null,
+): Promise<PlaylistArtistTag[]> {
+  const ids = artistIds ?? [];
+  if (ids.length === 0) return [];
+  const rows = await prisma.artist.findMany({
+    where: { id: { in: ids.map((s) => BigInt(s)) } },
+    select: { id: true, name: true },
+  });
+  const byId = new Map(rows.map((r) => [r.id.toString(), r.name]));
+  return ids.map((id) => ({
+    id,
+    name: byId.get(id) ?? `Artist #${id}`,
+  }));
+}
+
+function artistIdsFromFormData(formData: FormData): string[] {
+  const raw = formData.getAll("artistIds");
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const v of raw) {
+    if (typeof v !== "string" || !/^\d+$/.test(v)) continue;
+    if (seen.has(v)) continue;
+    seen.add(v);
+    out.push(v);
+  }
+  return out;
+}
+
+async function persistableArtistIds(ids: string[]): Promise<string[]> {
+  if (ids.length === 0) return [];
+  const found = await prisma.artist.findMany({
+    where: { id: { in: ids.map((s) => BigInt(s)) } },
+    select: { id: true },
+  });
+  const allowed = new Set(found.map((f) => f.id.toString()));
+  return ids.filter((id) => allowed.has(id));
+}
 
 function parseMaxFollowersFromForm(raw: FormDataEntryValue | null): number | null {
   if (raw == null || typeof raw !== "string") return null;
@@ -187,6 +227,11 @@ export default async function Playlists({
     q: "",
   };
 
+  const editDefaultArtists =
+    selectedPlaylist && showEditPlaylist
+      ? await resolvePlaylistArtistTags(selectedPlaylist.artistIds)
+      : [];
+
   async function generatePlaylistFromCriteria(formData: FormData) {
     "use server";
 
@@ -278,7 +323,9 @@ export default async function Playlists({
       throw new Error("Name is required.");
     }
 
-    const maxFollowers = parseMaxFollowersFromForm(maxFollowersRaw);
+    const artistIds = await persistableArtistIds(artistIdsFromFormData(formData));
+    const maxFollowers =
+      artistIds.length > 0 ? null : parseMaxFollowersFromForm(maxFollowersRaw);
 
     if (typeof playlistIdValue === "string" && /^\d+$/.test(playlistIdValue)) {
       const playlistId = BigInt(playlistIdValue);
@@ -291,7 +338,13 @@ export default async function Playlists({
       }
       await prisma.playlist.update({
         where: { id: playlistId },
-        data: { name, description, maxFollowers },
+        data: {
+          name,
+          description,
+          maxFollowers,
+          artistIds,
+          ...(artistIds.length > 0 ? { genres: [] } : {}),
+        },
       });
       redirect(returnToValue);
     } else {
@@ -302,6 +355,7 @@ export default async function Playlists({
           name,
           description,
           genres: [],
+          artistIds,
           maxFollowers,
           size: 0,
         },
@@ -364,6 +418,7 @@ export default async function Playlists({
                   order,
                   playlistId,
                   q,
+                  editPlaylist: showEditPlaylist,
                 })
               }
             />
@@ -416,6 +471,7 @@ export default async function Playlists({
               playlistId={selectedPlaylist.id.toString()}
               defaultName={selectedPlaylist.name}
               defaultDescription={selectedPlaylist.description}
+              defaultArtists={editDefaultArtists}
               defaultMaxFollowers={selectedPlaylist.maxFollowers}
               cancelHref={playlistViewHref}
               savePlaylistDetailsAction={savePlaylistDetails}
