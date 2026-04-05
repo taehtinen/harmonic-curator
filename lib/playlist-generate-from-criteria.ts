@@ -5,42 +5,67 @@ function normalizePlaylistGenres(genres: string[]): string[] {
   return [...new Set(genres.map((g) => g.trim().toLowerCase()).filter(Boolean))];
 }
 
-export async function fetchTrackIdsMatchingPlaylistCriteria(
-  genres: string[],
-  maxFollowers: number | null,
-  size: number,
+/** Artist playlists: newest albums first; same-album tracks in disc order (track number). */
+const trackOrderForArtistPlaylist = [
+  { album: { releaseDate: "desc" as const } },
+  { albumId: "asc" as const },
+  { trackNumber: "asc" as const },
+  { popularity: "desc" as const },
+] as const;
+
+/**
+ * Genre/follower curation: when taking one track per artist, walk candidates in this order so the
+ * chosen row is the most popular among ties on the same album (same release date).
+ */
+const trackOrderForGenreFollowerPick = [
+  { album: { releaseDate: "desc" as const } },
+  { popularity: "desc" as const },
+  { trackNumber: "asc" as const },
+] as const;
+
+/** All tracks from the given artists (non-ignored), album sequence as above, capped at `size`. */
+async function fetchTrackIdsForSelectedArtists(
   artistIds: string[],
+  size: number,
 ): Promise<bigint[]> {
-  const normalizedGenres = normalizePlaylistGenres(genres);
   const limit = Math.max(0, size);
   if (limit === 0) return [];
-
-  const restrictToArtists = artistIds.length > 0;
-  const artistIdFilter = restrictToArtists
-    ? { id: { in: artistIds.map((s) => BigInt(s)) } }
-    : {};
-
-  const followerAndGenreFilters = restrictToArtists
-    ? {}
-    : {
-        ...(maxFollowers != null ? { followers: { lte: maxFollowers } } : {}),
-        ...(normalizedGenres.length > 0 ? { genres: { hasSome: normalizedGenres } } : {}),
-      };
 
   const tracks = await prisma.track.findMany({
     where: {
       artist: {
         isIgnored: false,
-        ...artistIdFilter,
-        ...followerAndGenreFilters,
+        id: { in: artistIds.map((s) => BigInt(s)) },
+      },
+    },
+    select: { id: true },
+    orderBy: [...trackOrderForArtistPlaylist],
+    take: limit,
+  });
+
+  return tracks.map((t) => t.id);
+}
+
+/** Genre + follower caps; at most one track per artist until `size` is reached. */
+async function fetchTrackIdsByGenreAndFollowerCriteria(
+  genres: string[],
+  maxFollowers: number | null,
+  size: number,
+): Promise<bigint[]> {
+  const normalizedGenres = normalizePlaylistGenres(genres);
+  const limit = Math.max(0, size);
+  if (limit === 0) return [];
+
+  const tracks = await prisma.track.findMany({
+    where: {
+      artist: {
+        isIgnored: false,
+        ...(maxFollowers != null ? { followers: { lte: maxFollowers } } : {}),
+        ...(normalizedGenres.length > 0 ? { genres: { hasSome: normalizedGenres } } : {}),
       },
     },
     select: { id: true, artistId: true },
-    orderBy: [
-      { album: { releaseDate: "desc" } },
-      { popularity: "desc" },
-      { trackNumber: "asc" },
-    ],
+    orderBy: [...trackOrderForGenreFollowerPick],
   });
 
   const picked: bigint[] = [];
@@ -53,6 +78,18 @@ export async function fetchTrackIdsMatchingPlaylistCriteria(
     picked.push(row.id);
   }
   return picked;
+}
+
+export async function fetchTrackIdsMatchingPlaylistCriteria(
+  genres: string[],
+  maxFollowers: number | null,
+  size: number,
+  artistIds: string[],
+): Promise<bigint[]> {
+  if (artistIds.length > 0) {
+    return fetchTrackIdsForSelectedArtists(artistIds, size);
+  }
+  return fetchTrackIdsByGenreAndFollowerCriteria(genres, maxFollowers, size);
 }
 
 export async function replacePlaylistTracksFromDbCriteria(playlistDbId: bigint): Promise<void> {
