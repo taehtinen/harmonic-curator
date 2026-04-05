@@ -87,6 +87,24 @@ function parseMaxFollowersFromForm(raw: FormDataEntryValue | null): number | nul
   return n;
 }
 
+const MIN_PLAYLIST_SIZE = 1;
+const MAX_PLAYLIST_SIZE = 1000;
+
+function parsePlaylistSizeFromForm(raw: FormDataEntryValue | null): number {
+  if (raw == null || typeof raw !== "string") {
+    throw new Error("Max tracks is required.");
+  }
+  const t = raw.trim();
+  if (t === "" || !/^\d+$/.test(t)) {
+    throw new Error("Max tracks must be a whole number between 1 and 1000.");
+  }
+  const n = Number(t);
+  if (n < MIN_PLAYLIST_SIZE || n > MAX_PLAYLIST_SIZE) {
+    throw new Error("Max tracks must be between 1 and 1000.");
+  }
+  return n;
+}
+
 export default async function Playlists({
   searchParams,
 }: {
@@ -310,6 +328,7 @@ export default async function Playlists({
     const returnToValue = formData.get("returnTo");
     const nameRaw = formData.get("name");
     const descRaw = formData.get("description");
+    const sizeRaw = formData.get("size");
     const maxFollowersRaw = formData.get("maxFollowers");
     const playlistIdValue = formData.get("playlistId");
 
@@ -326,6 +345,7 @@ export default async function Playlists({
     const artistIds = await persistableArtistIds(artistIdsFromFormData(formData));
     const maxFollowers =
       artistIds.length > 0 ? null : parseMaxFollowersFromForm(maxFollowersRaw);
+    const size = parsePlaylistSizeFromForm(sizeRaw);
 
     if (typeof playlistIdValue === "string" && /^\d+$/.test(playlistIdValue)) {
       const playlistId = BigInt(playlistIdValue);
@@ -341,6 +361,7 @@ export default async function Playlists({
         data: {
           name,
           description,
+          size,
           maxFollowers,
           artistIds,
           ...(artistIds.length > 0 ? { genres: [] } : {}),
@@ -357,7 +378,7 @@ export default async function Playlists({
           genres: [],
           artistIds,
           maxFollowers,
-          size: 0,
+          size,
         },
         select: { id: true },
       });
@@ -473,6 +494,7 @@ export default async function Playlists({
               defaultDescription={selectedPlaylist.description}
               defaultArtists={editDefaultArtists}
               defaultMaxFollowers={selectedPlaylist.maxFollowers}
+              defaultSize={selectedPlaylist.size}
               cancelHref={playlistViewHref}
               savePlaylistDetailsAction={savePlaylistDetails}
               saveReturnTo={playlistViewHref}

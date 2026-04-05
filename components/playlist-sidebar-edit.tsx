@@ -9,6 +9,7 @@ export default function PlaylistSidebarEdit({
   defaultDescription,
   defaultArtists,
   defaultMaxFollowers,
+  defaultSize,
   cancelHref,
   savePlaylistDetailsAction,
   saveReturnTo,
@@ -18,6 +19,7 @@ export default function PlaylistSidebarEdit({
   defaultDescription: string;
   defaultArtists: PlaylistArtistTag[];
   defaultMaxFollowers: number | null;
+  defaultSize: number;
   cancelHref: string;
   savePlaylistDetailsAction: (formData: FormData) => Promise<void>;
   saveReturnTo: string;
@@ -45,6 +47,7 @@ export default function PlaylistSidebarEdit({
             defaultDescription={defaultDescription}
             defaultArtists={defaultArtists}
             defaultMaxFollowers={defaultMaxFollowers}
+            defaultSize={defaultSize}
             submitLabel="Save changes"
             idPrefix="edit"
             aria-label="Edit playlist details"
