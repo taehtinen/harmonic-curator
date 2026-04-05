@@ -5,10 +5,10 @@ import { startTransition, useCallback, useEffect, useId, useState } from "react"
 export type PlaylistArtistTag = { id: string; name: string };
 
 const tagClassName =
-  "inline-flex max-w-full items-center gap-1 rounded-full border border-zinc-200 bg-zinc-100/80 py-0.5 pl-2.5 pr-1 text-xs font-medium text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-200";
+  "inline-flex max-w-full items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-100/80 py-1 pl-3 pr-1.5 text-sm font-medium text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-200";
 
 const removeButtonClassName =
-  "-mr-0.5 flex h-6 w-6 items-center justify-center rounded-full p-0 leading-none text-zinc-500 hover:bg-zinc-200/90 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-700/90 dark:hover:text-zinc-100";
+  "-mr-0.5 flex h-7 w-7 items-center justify-center rounded-full p-0 leading-none text-zinc-500 hover:bg-zinc-200/90 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-700/90 dark:hover:text-zinc-100";
 
 function useDebounced<T>(value: T, ms: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -41,6 +41,9 @@ export default function PlaylistArtistPicker({
   const [loading, setLoading] = useState(false);
 
   const searchActive = debouncedQuery.trim().length >= 2;
+  const queryReady = query.trim().length >= 2;
+  const awaitingDebounce = queryReady && debouncedQuery.trim().length < 2;
+  const suggestionsOpen = queryReady;
 
   useEffect(() => {
     if (!searchActive) return;
@@ -89,7 +92,7 @@ export default function PlaylistArtistPicker({
   }, []);
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="relative z-20 flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
         {selected.map((artist) => (
           <span key={artist.id} className={tagClassName}>
@@ -100,7 +103,7 @@ export default function PlaylistArtistPicker({
               className={removeButtonClassName}
               aria-label={`Remove ${artist.name}`}
             >
-              <span className="block translate-y-px text-sm leading-none" aria-hidden>
+              <span className="block translate-y-px text-base leading-none" aria-hidden>
                 ×
               </span>
             </button>
@@ -108,82 +111,62 @@ export default function PlaylistArtistPicker({
         ))}
       </div>
 
-      <div className="flex w-full flex-col gap-2">
+      <div className="relative w-full">
         <label htmlFor={`${idPrefix}-playlist-artist-search`} className="sr-only">
           Search artists to add
         </label>
-        <div className="flex flex-wrap items-stretch gap-2">
-          <input
-            id={`${idPrefix}-playlist-artist-search`}
-            type="search"
-            autoComplete="off"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name…"
-            className="min-w-0 flex-1 rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:border-zinc-500 dark:focus:ring-zinc-500"
-            aria-controls={listboxId}
-            aria-autocomplete="list"
-          />
-          <button
-            type="button"
-            disabled={
-              !searchActive ||
-              loading ||
-              !results.some((a) => !selected.some((s) => s.id === a.id))
-            }
-            onClick={() => {
-              const next = results.find((a) => !selected.some((s) => s.id === a.id));
-              if (next) addArtist(next);
-            }}
-            className="shrink-0 rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+        <input
+          id={`${idPrefix}-playlist-artist-search`}
+          type="search"
+          autoComplete="off"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by name…"
+          className="w-full rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:border-zinc-500 dark:focus:ring-zinc-500"
+          aria-expanded={suggestionsOpen}
+          aria-controls={suggestionsOpen ? listboxId : undefined}
+          aria-autocomplete="list"
+        />
+        {suggestionsOpen ? (
+          <ul
+            id={listboxId}
+            role="listbox"
+            className="absolute left-0 right-0 top-full z-30 mt-1 max-h-48 overflow-auto rounded-md border border-zinc-200 bg-white py-1 text-sm shadow-lg ring-1 ring-zinc-950/5 dark:border-zinc-600 dark:bg-zinc-900 dark:ring-white/10"
           >
-            Add
-          </button>
-        </div>
-        <ul
-          id={listboxId}
-          role="listbox"
-          className="max-h-48 overflow-auto rounded-md border border-zinc-200 bg-white py-1 text-sm shadow-sm dark:border-zinc-600 dark:bg-zinc-900"
-        >
-          {loading && searchActive ? (
-            <li className="px-3 py-2 text-zinc-500 dark:text-zinc-400">Searching…</li>
-          ) : query.trim().length < 2 ? (
-            <li className="px-3 py-2 text-zinc-500 dark:text-zinc-400">
-              Type at least 2 characters
-            </li>
-          ) : results.length === 0 ? (
-            <li className="px-3 py-2 text-zinc-500 dark:text-zinc-400">No matches</li>
-          ) : (
-            results.map((a) => {
-              const disabled = selected.some((s) => s.id === a.id);
-              return (
-                <li key={a.id} role="option" aria-selected={false}>
-                  <button
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => addArtist(a)}
-                    className={`flex w-full px-3 py-2 text-left ${
-                      disabled
-                        ? "cursor-not-allowed text-zinc-400 dark:text-zinc-500"
-                        : "text-zinc-900 hover:bg-zinc-100 dark:text-zinc-100 dark:hover:bg-zinc-800"
-                    }`}
-                  >
-                    {a.name}
-                    {disabled ? " (added)" : null}
-                  </button>
-                </li>
-              );
-            })
-          )}
-        </ul>
+            {loading || awaitingDebounce ? (
+              <li className="min-h-10 px-3 py-2 text-zinc-500 dark:text-zinc-400">
+                Searching…
+              </li>
+            ) : results.length === 0 ? (
+              <li className="px-3 py-2 text-zinc-500 dark:text-zinc-400">No matches</li>
+            ) : (
+              results.map((a) => {
+                const disabled = selected.some((s) => s.id === a.id);
+                return (
+                  <li key={a.id} role="option" aria-selected={false}>
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => addArtist(a)}
+                      className={`flex w-full px-3 py-2 text-left ${
+                        disabled
+                          ? "cursor-not-allowed text-zinc-400 dark:text-zinc-500"
+                          : "text-zinc-900 hover:bg-zinc-100 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                      }`}
+                    >
+                      {a.name}
+                      {disabled ? " (added)" : null}
+                    </button>
+                  </li>
+                );
+              })
+            )}
+          </ul>
+        ) : null}
       </div>
       {selected.map((a) => (
         <input key={a.id} type="hidden" name="artistIds" value={a.id} />
       ))}
-      <p className="text-xs text-zinc-500 dark:text-zinc-400">
-        When set, generation uses only tracks from these artists. Playlist genres and max followers
-        are cleared and ignored until you remove all artists.
-      </p>
     </div>
   );
 }

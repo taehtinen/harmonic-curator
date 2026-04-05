@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PlaylistArtistAlgorithm } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUser, userIsAdmin } from "@/lib/auth";
 import {
@@ -106,6 +107,21 @@ function parseMaxFollowersFromForm(raw: FormDataEntryValue | null): number | nul
 
 const MIN_PLAYLIST_SIZE = 1;
 const MAX_PLAYLIST_SIZE = 1000;
+
+function parseArtistAlgorithmFromForm(
+  formData: FormData,
+  hasSelectedArtists: boolean,
+): PlaylistArtistAlgorithm {
+  if (!hasSelectedArtists) {
+    return PlaylistArtistAlgorithm.DEFAULT;
+  }
+  const raw = formData.get("artistAlgorithm");
+  const s = typeof raw === "string" ? raw.trim() : "";
+  if (s === PlaylistArtistAlgorithm.FEATURED) {
+    return PlaylistArtistAlgorithm.FEATURED;
+  }
+  return PlaylistArtistAlgorithm.DEFAULT;
+}
 
 function parsePlaylistSizeFromForm(raw: FormDataEntryValue | null): number {
   if (raw == null || typeof raw !== "string") {
@@ -360,11 +376,13 @@ export default async function Playlists({
     }
 
     const artistIds = await persistableArtistIds(artistIdsFromFormData(formData));
+    const hasSelectedArtists = artistIds.length > 0;
+    const artistAlgorithm = parseArtistAlgorithmFromForm(formData, hasSelectedArtists);
     const maxFollowers =
-      artistIds.length > 0 ? null : parseMaxFollowersFromForm(maxFollowersRaw);
+      hasSelectedArtists ? null : parseMaxFollowersFromForm(maxFollowersRaw);
     const size = parsePlaylistSizeFromForm(sizeRaw);
     const genres =
-      artistIds.length > 0 ? [] : normalizePlaylistGenres(genresFromFormData(formData));
+      hasSelectedArtists ? [] : normalizePlaylistGenres(genresFromFormData(formData));
 
     if (typeof playlistIdValue === "string" && /^\d+$/.test(playlistIdValue)) {
       const playlistId = BigInt(playlistIdValue);
@@ -383,6 +401,7 @@ export default async function Playlists({
           size,
           maxFollowers,
           artistIds,
+          artistAlgorithm,
           genres,
         },
       });
@@ -396,6 +415,7 @@ export default async function Playlists({
           description,
           genres,
           artistIds,
+          artistAlgorithm,
           maxFollowers,
           size,
         },
@@ -512,6 +532,7 @@ export default async function Playlists({
               defaultName={selectedPlaylist.name}
               defaultDescription={selectedPlaylist.description}
               defaultArtists={editDefaultArtists}
+              defaultArtistAlgorithm={selectedPlaylist.artistAlgorithm}
               defaultGenres={selectedPlaylist.genres}
               defaultMaxFollowers={selectedPlaylist.maxFollowers}
               defaultSize={selectedPlaylist.size}

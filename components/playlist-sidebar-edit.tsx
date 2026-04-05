@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { PlaylistArtistAlgorithm } from "@prisma/client";
 import PlaylistDetailsForm from "@/components/playlist-details-form";
 
 import type { PlaylistArtistTag } from "@/components/playlist-artist-picker";
@@ -8,6 +9,7 @@ export default function PlaylistSidebarEdit({
   defaultName,
   defaultDescription,
   defaultArtists,
+  defaultArtistAlgorithm,
   defaultGenres,
   defaultMaxFollowers,
   defaultSize,
@@ -19,6 +21,7 @@ export default function PlaylistSidebarEdit({
   defaultName: string;
   defaultDescription: string;
   defaultArtists: PlaylistArtistTag[];
+  defaultArtistAlgorithm: PlaylistArtistAlgorithm;
   defaultGenres: string[];
   defaultMaxFollowers: number | null;
   defaultSize: number;
@@ -48,12 +51,16 @@ export default function PlaylistSidebarEdit({
             defaultName={defaultName}
             defaultDescription={defaultDescription}
             defaultArtists={defaultArtists}
+            defaultArtistAlgorithm={defaultArtistAlgorithm}
             defaultGenres={defaultGenres}
             defaultMaxFollowers={defaultMaxFollowers}
             defaultSize={defaultSize}
             submitLabel="Save changes"
             idPrefix="edit"
             aria-label="Edit playlist details"
+            showTracksSubheading={false}
+            showMaxTracksHelp={false}
+            disableSelectArtistsWhenCriteriaFilled
           />
         </div>
       </section>

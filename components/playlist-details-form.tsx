@@ -1,3 +1,7 @@
+"use client";
+
+import { PlaylistArtistAlgorithm } from "@prisma/client";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import PlaylistArtistsFormSection from "@/components/playlist-artists-form-section";
 import type { PlaylistArtistTag } from "@/components/playlist-artist-picker";
 
@@ -16,6 +20,7 @@ export default function PlaylistDetailsForm({
   defaultName = "",
   defaultDescription = "",
   defaultArtists = [],
+  defaultArtistAlgorithm = PlaylistArtistAlgorithm.DEFAULT,
   defaultGenres = [],
   defaultMaxFollowers = null,
   defaultSize = DEFAULT_MAX_TRACKS,
@@ -24,11 +29,15 @@ export default function PlaylistDetailsForm({
   submitLabel,
   idPrefix,
   "aria-label": ariaLabel,
+  showTracksSubheading = true,
+  showMaxTracksHelp = true,
+  disableSelectArtistsWhenCriteriaFilled = false,
 }: {
   action: (formData: FormData) => Promise<void>;
   defaultName?: string;
   defaultDescription?: string;
   defaultArtists?: PlaylistArtistTag[];
+  defaultArtistAlgorithm?: (typeof PlaylistArtistAlgorithm)[keyof typeof PlaylistArtistAlgorithm];
   defaultGenres?: string[];
   /** Omit or null: no artist follower cap (stored as null). */
   defaultMaxFollowers?: number | null;
@@ -39,9 +48,41 @@ export default function PlaylistDetailsForm({
   submitLabel: string;
   idPrefix: string;
   "aria-label": string;
+  showTracksSubheading?: boolean;
+  showMaxTracksHelp?: boolean;
+  disableSelectArtistsWhenCriteriaFilled?: boolean;
 }) {
+  const [artistAlgorithm, setArtistAlgorithm] = useState(defaultArtistAlgorithm);
+
+  useEffect(() => {
+    setArtistAlgorithm(defaultArtistAlgorithm);
+  }, [defaultArtistAlgorithm, playlistId]);
+
+  const handleSubmit = useCallback(
+    async (e: FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      const form = e.currentTarget;
+      const fd = new FormData(form);
+      const rawIds = fd.getAll("artistIds");
+      const hasArtists = rawIds.some(
+        (v) => typeof v === "string" && /^\d+$/.test(v.trim()),
+      );
+      fd.set(
+        "artistAlgorithm",
+        hasArtists ? artistAlgorithm : PlaylistArtistAlgorithm.DEFAULT,
+      );
+      await action(fd);
+    },
+    [action, artistAlgorithm],
+  );
+
   return (
-    <form action={action} className="flex flex-col gap-4" aria-label={ariaLabel}>
+    <form
+      key={playlistId ?? "new"}
+      onSubmit={handleSubmit}
+      className="flex flex-col gap-4"
+      aria-label={ariaLabel}
+    >
       <input type="hidden" name="returnTo" value={returnTo} />
       {playlistId ? <input type="hidden" name="playlistId" value={playlistId} /> : null}
       <div className="flex flex-col gap-1.5">
@@ -80,16 +121,22 @@ export default function PlaylistDetailsForm({
       </div>
 
       <PlaylistArtistsFormSection
-        key={playlistId ?? "new"}
         defaultArtists={defaultArtists}
+        artistAlgorithm={artistAlgorithm}
+        onArtistAlgorithmChange={setArtistAlgorithm}
         defaultGenres={defaultGenres}
         defaultMaxFollowers={defaultMaxFollowers}
+        disableSelectArtistsWhenCriteriaFilled={
+          disableSelectArtistsWhenCriteriaFilled
+        }
         idPrefix={idPrefix}
         fieldClassName={fieldClassName}
       />
 
       <div className="flex flex-col gap-3 border-t border-zinc-200 pt-4 dark:border-zinc-700">
-        <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Tracks</h3>
+        {showTracksSubheading ? (
+          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Tracks</h3>
+        ) : null}
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor={`${idPrefix}-playlist-max-tracks`}
@@ -110,10 +157,12 @@ export default function PlaylistDetailsForm({
             defaultValue={defaultSize}
             className={fieldClassName}
           />
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Between {MIN_MAX_TRACKS.toLocaleString()} and {MAX_MAX_TRACKS.toLocaleString()} tracks when
-            generating from criteria.
-          </p>
+          {showMaxTracksHelp ? (
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              Between {MIN_MAX_TRACKS.toLocaleString()} and {MAX_MAX_TRACKS.toLocaleString()} tracks when
+              generating from criteria.
+            </p>
+          ) : null}
         </div>
       </div>
 

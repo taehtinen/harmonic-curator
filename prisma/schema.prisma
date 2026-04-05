@@ -17,6 +17,14 @@ enum UserStatus {
   ADMIN
 }
 
+/** How tracks are chosen when a playlist uses explicit artist selection (`artistIds` non-empty). */
+enum PlaylistArtistAlgorithm {
+  /** Newest albums first; tracks ordered by album release and disc/track number (previous behavior). */
+  DEFAULT
+  /** Tracks where the primary artist is selected and the row has more than one `track_artist` credit (collaborations). */
+  FEATURED
+}
+
 model User {
   id           BigInt     @id @default(autoincrement())
   username     String     @unique
@@ -135,6 +143,7 @@ model Playlist {
   genres         String[]
   /** Internal `artist.id` values (decimal strings) limiting curation to these artists when non-empty. */
   artistIds      String[] @default([])
+  artistAlgorithm PlaylistArtistAlgorithm @default(DEFAULT)
   maxFollowers   Int?
   size           Int
   /** Last time local `playlist_track` rows were written (reorder/add/remove, including import seed). */
