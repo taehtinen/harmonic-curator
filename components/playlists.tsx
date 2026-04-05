@@ -2,7 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUser, userIsAdmin } from "@/lib/auth";
-import { replacePlaylistTracksFromDbCriteria } from "@/lib/playlist-generate-from-criteria";
+import {
+  normalizePlaylistGenres,
+  replacePlaylistTracksFromDbCriteria,
+} from "@/lib/playlist-generate-from-criteria";
 import { publishPlaylistTracksForUser } from "@/lib/spotify-playlist-publish";
 import PlaylistSidebar from "@/components/playlist-sidebar";
 import PlaylistSidebarEdit from "@/components/playlist-sidebar-edit";
@@ -59,6 +62,20 @@ function artistIdsFromFormData(formData: FormData): string[] {
     if (seen.has(v)) continue;
     seen.add(v);
     out.push(v);
+  }
+  return out;
+}
+
+function genresFromFormData(formData: FormData): string[] {
+  const raw = formData.getAll("genres");
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const v of raw) {
+    if (typeof v !== "string") continue;
+    const t = v.trim();
+    if (!t || seen.has(t)) continue;
+    seen.add(t);
+    out.push(t);
   }
   return out;
 }
@@ -346,6 +363,8 @@ export default async function Playlists({
     const maxFollowers =
       artistIds.length > 0 ? null : parseMaxFollowersFromForm(maxFollowersRaw);
     const size = parsePlaylistSizeFromForm(sizeRaw);
+    const genres =
+      artistIds.length > 0 ? [] : normalizePlaylistGenres(genresFromFormData(formData));
 
     if (typeof playlistIdValue === "string" && /^\d+$/.test(playlistIdValue)) {
       const playlistId = BigInt(playlistIdValue);
@@ -364,7 +383,7 @@ export default async function Playlists({
           size,
           maxFollowers,
           artistIds,
-          ...(artistIds.length > 0 ? { genres: [] } : {}),
+          genres,
         },
       });
       redirect(returnToValue);
@@ -375,7 +394,7 @@ export default async function Playlists({
           spotifyId: null,
           name,
           description,
-          genres: [],
+          genres,
           artistIds,
           maxFollowers,
           size,
@@ -493,6 +512,7 @@ export default async function Playlists({
               defaultName={selectedPlaylist.name}
               defaultDescription={selectedPlaylist.description}
               defaultArtists={editDefaultArtists}
+              defaultGenres={selectedPlaylist.genres}
               defaultMaxFollowers={selectedPlaylist.maxFollowers}
               defaultSize={selectedPlaylist.size}
               cancelHref={playlistViewHref}

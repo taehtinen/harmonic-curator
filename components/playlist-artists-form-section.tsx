@@ -4,28 +4,31 @@ import { useCallback, useId, useState } from "react";
 import PlaylistArtistPicker, {
   type PlaylistArtistTag,
 } from "@/components/playlist-artist-picker";
+import PlaylistGenrePicker from "@/components/playlist-genre-picker";
 
-type ArtistsTab = "filters" | "search";
+type PlaylistLogicTab = "genre" | "artists";
 
 export default function PlaylistArtistsFormSection({
   defaultArtists,
+  defaultGenres,
   defaultMaxFollowers,
   idPrefix,
   fieldClassName,
 }: {
   defaultArtists: PlaylistArtistTag[];
+  defaultGenres: string[];
   defaultMaxFollowers: number | null;
   idPrefix: string;
   fieldClassName: string;
 }) {
   const baseId = useId();
-  const tabFiltersId = `${idPrefix}-tab-filters-${baseId}`;
-  const tabSearchId = `${idPrefix}-tab-artist-search-${baseId}`;
-  const panelFiltersId = `${idPrefix}-panel-filters-${baseId}`;
-  const panelSearchId = `${idPrefix}-panel-artist-search-${baseId}`;
+  const tabGenreId = `${idPrefix}-tab-genre-${baseId}`;
+  const tabArtistsId = `${idPrefix}-tab-artist-search-${baseId}`;
+  const panelGenreId = `${idPrefix}-panel-genre-${baseId}`;
+  const panelArtistsId = `${idPrefix}-panel-artist-search-${baseId}`;
 
-  const [activeTab, setActiveTab] = useState<ArtistsTab>(() =>
-    defaultArtists.length > 0 ? "search" : "filters",
+  const [activeTab, setActiveTab] = useState<PlaylistLogicTab>(() =>
+    defaultArtists.length > 0 ? "artists" : "genre",
   );
   const [hasSelectedArtists, setHasSelectedArtists] = useState(
     () => defaultArtists.length > 0,
@@ -35,7 +38,7 @@ export default function PlaylistArtistsFormSection({
     const has = artists.length > 0;
     setHasSelectedArtists(has);
     if (has) {
-      setActiveTab("search");
+      setActiveTab("artists");
     }
   }, []);
 
@@ -50,51 +53,51 @@ export default function PlaylistArtistsFormSection({
 
   return (
     <div className="flex flex-col gap-3 border-t border-zinc-200 pt-4 dark:border-zinc-700">
-      <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Artists</h3>
+      <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Playlist logic</h3>
 
       <div className="flex flex-col gap-0">
         <div
           role="tablist"
-          aria-label="Artist criteria"
+          aria-label="Playlist generation criteria"
           className="flex flex-wrap gap-0.5"
         >
           <button
             type="button"
             role="tab"
-            id={tabFiltersId}
-            aria-selected={activeTab === "filters" && !hasSelectedArtists}
-            aria-controls={panelFiltersId}
+            id={tabGenreId}
+            aria-selected={activeTab === "genre" && !hasSelectedArtists}
+            aria-controls={panelGenreId}
             aria-disabled={hasSelectedArtists}
             disabled={hasSelectedArtists}
             tabIndex={
-              hasSelectedArtists ? -1 : activeTab === "filters" ? 0 : -1
+              hasSelectedArtists ? -1 : activeTab === "genre" ? 0 : -1
             }
             onClick={() => {
-              if (!hasSelectedArtists) setActiveTab("filters");
+              if (!hasSelectedArtists) setActiveTab("genre");
             }}
             title={
               hasSelectedArtists
-                ? "Remove all selected artists to use follower filters"
+                ? "Remove all selected artists to use genre and follower filters"
                 : undefined
             }
             className={tabButtonClass(
-              activeTab === "filters",
+              activeTab === "genre",
               hasSelectedArtists,
             )}
           >
-            Filters
+            Genre
           </button>
           <button
             type="button"
             role="tab"
-            id={tabSearchId}
-            aria-selected={activeTab === "search" || hasSelectedArtists}
-            aria-controls={panelSearchId}
+            id={tabArtistsId}
+            aria-selected={activeTab === "artists" || hasSelectedArtists}
+            aria-controls={panelArtistsId}
             tabIndex={
-              hasSelectedArtists ? 0 : activeTab === "search" ? 0 : -1
+              hasSelectedArtists ? 0 : activeTab === "artists" ? 0 : -1
             }
-            onClick={() => setActiveTab("search")}
-            className={tabButtonClass(activeTab === "search")}
+            onClick={() => setActiveTab("artists")}
+            className={tabButtonClass(activeTab === "artists")}
           >
             Select artists
           </button>
@@ -102,49 +105,52 @@ export default function PlaylistArtistsFormSection({
 
         <div
           role="tabpanel"
-          id={panelFiltersId}
-          aria-labelledby={tabFiltersId}
-          hidden={activeTab !== "filters"}
+          id={panelGenreId}
+          aria-labelledby={tabGenreId}
+          hidden={activeTab !== "genre"}
           className="rounded-b-md rounded-tr-md border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900"
         >
           {!hasSelectedArtists ? (
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor={`${idPrefix}-playlist-max-followers`}
-                className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
-              >
-                Max followers
-              </label>
-              <input
-                id={`${idPrefix}-playlist-max-followers`}
-                name="maxFollowers"
-                type="number"
-                inputMode="numeric"
-                min={0}
-                max={2147483647}
-                step={1}
-                autoComplete="off"
-                placeholder="No limit"
-                defaultValue={defaultMaxFollowers ?? ""}
-                className={fieldClassName}
-              />
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Only include artists that have at most this many Spotify followers.
-              </p>
+            <div className="flex flex-col gap-4">
+              <PlaylistGenrePicker defaultGenres={defaultGenres} idPrefix={idPrefix} />
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor={`${idPrefix}-playlist-max-followers`}
+                  className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                >
+                  Max followers
+                </label>
+                <input
+                  id={`${idPrefix}-playlist-max-followers`}
+                  name="maxFollowers"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={2147483647}
+                  step={1}
+                  autoComplete="off"
+                  placeholder="No limit"
+                  defaultValue={defaultMaxFollowers ?? ""}
+                  className={fieldClassName}
+                />
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  Only include artists that have at most this many Spotify followers.
+                </p>
+              </div>
             </div>
           ) : (
             <p className="text-sm text-zinc-600 dark:text-zinc-400">
               This playlist uses specific artists. Remove all artists on the Select artists tab to set
-              a follower cap again.
+              genres and a follower cap again.
             </p>
           )}
         </div>
 
         <div
           role="tabpanel"
-          id={panelSearchId}
-          aria-labelledby={tabSearchId}
-          hidden={activeTab !== "search"}
+          id={panelArtistsId}
+          aria-labelledby={tabArtistsId}
+          hidden={activeTab !== "artists"}
           className="rounded-b-md rounded-tr-md border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900"
         >
           <PlaylistArtistPicker

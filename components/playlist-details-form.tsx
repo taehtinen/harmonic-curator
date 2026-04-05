@@ -16,6 +16,7 @@ export default function PlaylistDetailsForm({
   defaultName = "",
   defaultDescription = "",
   defaultArtists = [],
+  defaultGenres = [],
   defaultMaxFollowers = null,
   defaultSize = DEFAULT_MAX_TRACKS,
   playlistId,
@@ -28,6 +29,7 @@ export default function PlaylistDetailsForm({
   defaultName?: string;
   defaultDescription?: string;
   defaultArtists?: PlaylistArtistTag[];
+  defaultGenres?: string[];
   /** Omit or null: no artist follower cap (stored as null). */
   defaultMaxFollowers?: number | null;
   /** Target track cap for generation; defaults to 100 for new playlists. */
@@ -80,6 +82,7 @@ export default function PlaylistDetailsForm({
       <PlaylistArtistsFormSection
         key={playlistId ?? "new"}
         defaultArtists={defaultArtists}
+        defaultGenres={defaultGenres}
         defaultMaxFollowers={defaultMaxFollowers}
         idPrefix={idPrefix}
         fieldClassName={fieldClassName}

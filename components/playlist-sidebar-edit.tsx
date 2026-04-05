@@ -8,6 +8,7 @@ export default function PlaylistSidebarEdit({
   defaultName,
   defaultDescription,
   defaultArtists,
+  defaultGenres,
   defaultMaxFollowers,
   defaultSize,
   cancelHref,
@@ -18,6 +19,7 @@ export default function PlaylistSidebarEdit({
   defaultName: string;
   defaultDescription: string;
   defaultArtists: PlaylistArtistTag[];
+  defaultGenres: string[];
   defaultMaxFollowers: number | null;
   defaultSize: number;
   cancelHref: string;
@@ -46,6 +48,7 @@ export default function PlaylistSidebarEdit({
             defaultName={defaultName}
             defaultDescription={defaultDescription}
             defaultArtists={defaultArtists}
+            defaultGenres={defaultGenres}
             defaultMaxFollowers={defaultMaxFollowers}
             defaultSize={defaultSize}
             submitLabel="Save changes"

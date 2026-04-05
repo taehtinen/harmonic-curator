@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { recordPlaylistTrackEdit } from "@/lib/playlist-timestamps";
 
-function normalizePlaylistGenres(genres: string[]): string[] {
+export function normalizePlaylistGenres(genres: string[]): string[] {
   return [...new Set(genres.map((g) => g.trim().toLowerCase()).filter(Boolean))];
 }
 
