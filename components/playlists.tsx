@@ -5,9 +5,12 @@ import { requireUser, userIsAdmin } from "@/lib/auth";
 import { replacePlaylistTracksFromDbCriteria } from "@/lib/playlist-generate-from-criteria";
 import { publishPlaylistTracksForUser } from "@/lib/spotify-playlist-publish";
 import PlaylistSidebar from "@/components/playlist-sidebar";
+import PlaylistSidebarEdit from "@/components/playlist-sidebar-edit";
+import PlaylistSidebarNew from "@/components/playlist-sidebar-new";
 import PlaylistsTable from "@/components/playlists-table";
 import {
   buildPlaylistsUrl,
+  withPlaylistParam,
   type PlaylistsListOrder,
   type PlaylistsListSort,
 } from "@/lib/playlists-url";
@@ -28,6 +31,22 @@ function parseOrder(orderParam: string | undefined): PlaylistsListOrder {
   return "asc";
 }
 
+const MAX_PG_INT = 2147483647;
+
+function parseMaxFollowersFromForm(raw: FormDataEntryValue | null): number | null {
+  if (raw == null || typeof raw !== "string") return null;
+  const t = raw.trim();
+  if (t === "") return null;
+  if (!/^\d+$/.test(t)) {
+    throw new Error("Max followers must be a whole number, or left blank for no limit.");
+  }
+  const n = Number(t);
+  if (n > MAX_PG_INT) {
+    throw new Error("Max followers is too large.");
+  }
+  return n;
+}
+
 export default async function Playlists({
   searchParams,
 }: {
@@ -37,6 +56,8 @@ export default async function Playlists({
     order?: string;
     q?: string;
     playlist?: string;
+    new?: string;
+    edit?: string;
     publish?: string;
     publish_err?: string;
   }>;
@@ -47,6 +68,8 @@ export default async function Playlists({
     order: orderParam,
     q: qParam,
     playlist: playlistParam,
+    new: newParam,
+    edit: editParam,
     publish: publishParam,
     publish_err: publishErrParam,
   } = await searchParams;
@@ -129,16 +152,33 @@ export default async function Playlists({
       })
     : null;
 
-  const panelOpen = Boolean(selectedPlaylist);
+  const showNewPlaylist = newParam === "1" && !selectedPlaylist;
+  const showEditPlaylist = editParam === "1" && Boolean(selectedPlaylist);
+  const panelOpen = Boolean(selectedPlaylist) || showNewPlaylist;
   const openPlaylistId = selectedPlaylist?.id.toString();
   const closePlaylistHref = buildPlaylistsUrl({ page, sort, order, q });
-  const playlistPanelReturnToHref = buildPlaylistsUrl({
+  const newPlaylistHref = buildPlaylistsUrl({
     page,
     sort,
     order,
-    playlistId: openPlaylistId,
     q,
+    newPlaylist: true,
   });
+  const playlistViewHref = openPlaylistId
+    ? buildPlaylistsUrl({ page, sort, order, playlistId: openPlaylistId, q })
+    : closePlaylistHref;
+  const playlistEditHref = openPlaylistId
+    ? buildPlaylistsUrl({
+        page,
+        sort,
+        order,
+        playlistId: openPlaylistId,
+        q,
+        editPlaylist: true,
+      })
+    : closePlaylistHref;
+  const playlistPanelReturnToHref = playlistViewHref;
+  const newPlaylistSaveReturnTo = buildPlaylistsUrl({ page, sort, order, q });
 
   const artistsHrefContext: ArtistsHrefContext = {
     page: 1,
@@ -217,6 +257,60 @@ export default async function Playlists({
     redirect(`${flashUrl.pathname}${flashUrl.search}`);
   }
 
+  async function savePlaylistDetails(formData: FormData) {
+    "use server";
+
+    const actingUser = await requireUser();
+    const userId = BigInt(actingUser.id);
+    const returnToValue = formData.get("returnTo");
+    const nameRaw = formData.get("name");
+    const descRaw = formData.get("description");
+    const maxFollowersRaw = formData.get("maxFollowers");
+    const playlistIdValue = formData.get("playlistId");
+
+    if (typeof returnToValue !== "string") {
+      throw new Error("Invalid save playlist request payload.");
+    }
+
+    const name = typeof nameRaw === "string" ? nameRaw.trim() : "";
+    const description = typeof descRaw === "string" ? descRaw.trim() : "";
+    if (!name) {
+      throw new Error("Name is required.");
+    }
+
+    const maxFollowers = parseMaxFollowersFromForm(maxFollowersRaw);
+
+    if (typeof playlistIdValue === "string" && /^\d+$/.test(playlistIdValue)) {
+      const playlistId = BigInt(playlistIdValue);
+      const owned = await prisma.playlist.findFirst({
+        where: { id: playlistId, userId },
+        select: { id: true },
+      });
+      if (!owned) {
+        throw new Error("Playlist not found.");
+      }
+      await prisma.playlist.update({
+        where: { id: playlistId },
+        data: { name, description, maxFollowers },
+      });
+      redirect(returnToValue);
+    } else {
+      const created = await prisma.playlist.create({
+        data: {
+          userId,
+          spotifyId: null,
+          name,
+          description,
+          genres: [],
+          maxFollowers,
+          size: 0,
+        },
+        select: { id: true },
+      });
+      redirect(withPlaylistParam(returnToValue, created.id.toString()));
+    }
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-zinc-50 font-sans dark:bg-black">
       <main className="flex min-h-0 w-full max-w-none flex-1 flex-col gap-4 overflow-hidden bg-white px-6 py-4 text-zinc-900 dark:bg-black dark:text-zinc-50">
@@ -229,6 +323,9 @@ export default async function Playlists({
               playlists={playlists}
               panelOpen={panelOpen}
               selectedPlaylistId={openPlaylistId}
+              preserveNewPlaylist={showNewPlaylist}
+              preserveEditPlaylist={showEditPlaylist}
+              newPlaylistHref={newPlaylistHref}
               sort={sort}
               order={order}
               searchQuery={q}
@@ -238,6 +335,8 @@ export default async function Playlists({
                 order,
                 playlistId: openPlaylistId,
                 q,
+                newPlaylist: showNewPlaylist,
+                editPlaylist: showEditPlaylist,
               })}
               sortArrow={sortArrow}
               nameSortHref={buildPlaylistsUrl({
@@ -246,6 +345,8 @@ export default async function Playlists({
                 order: nextOrder("name"),
                 playlistId: openPlaylistId,
                 q,
+                newPlaylist: showNewPlaylist,
+                editPlaylist: showEditPlaylist,
               })}
               lastPublishedSortHref={buildPlaylistsUrl({
                 page: pageForSort("lastSpotifyPublishAt"),
@@ -253,6 +354,8 @@ export default async function Playlists({
                 order: nextOrder("lastSpotifyPublishAt"),
                 playlistId: openPlaylistId,
                 q,
+                newPlaylist: showNewPlaylist,
+                editPlaylist: showEditPlaylist,
               })}
               getRowHref={(playlistId) =>
                 buildPlaylistsUrl({
@@ -279,6 +382,8 @@ export default async function Playlists({
                         order,
                         playlistId: openPlaylistId,
                         q,
+                        newPlaylist: showNewPlaylist,
+                        editPlaylist: showEditPlaylist,
                       })}
                       className="rounded-lg border border-zinc-200 bg-white px-3 py-2 font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
                     >
@@ -293,6 +398,8 @@ export default async function Playlists({
                         order,
                         playlistId: openPlaylistId,
                         q,
+                        newPlaylist: showNewPlaylist,
+                        editPlaylist: showEditPlaylist,
                       })}
                       className="rounded-lg border border-zinc-200 bg-white px-3 py-2 font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
                     >
@@ -304,10 +411,21 @@ export default async function Playlists({
             )}
           </div>
 
-          {selectedPlaylist && (
+          {selectedPlaylist && showEditPlaylist ? (
+            <PlaylistSidebarEdit
+              playlistId={selectedPlaylist.id.toString()}
+              defaultName={selectedPlaylist.name}
+              defaultDescription={selectedPlaylist.description}
+              defaultMaxFollowers={selectedPlaylist.maxFollowers}
+              cancelHref={playlistViewHref}
+              savePlaylistDetailsAction={savePlaylistDetails}
+              saveReturnTo={playlistViewHref}
+            />
+          ) : selectedPlaylist ? (
             <PlaylistSidebar
               playlist={selectedPlaylist}
               closeHref={closePlaylistHref}
+              editHref={playlistEditHref}
               generatePlaylistAction={generatePlaylistFromCriteria}
               generatePlaylistReturnToHref={playlistPanelReturnToHref}
               publishPlaylistAction={publishPlaylistToSpotify}
@@ -321,7 +439,13 @@ export default async function Playlists({
               }
               artistsHrefContext={artistsHrefContext}
             />
-          )}
+          ) : showNewPlaylist ? (
+            <PlaylistSidebarNew
+              closeHref={closePlaylistHref}
+              savePlaylistDetailsAction={savePlaylistDetails}
+              saveReturnTo={newPlaylistSaveReturnTo}
+            />
+          ) : null}
         </div>
       </main>
     </div>

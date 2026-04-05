@@ -169,6 +169,13 @@ export async function publishPlaylistTracksForUser(input: {
     return { ok: false, message: "Playlist not found." };
   }
 
+  if (playlist.spotifyId == null) {
+    return {
+      ok: false,
+      message: "This playlist is not linked to a Spotify playlist yet.",
+    };
+  }
+
   const desiredTrackIds = playlist.playlistTracks.map((pt) => pt.track.spotifyId);
 
   const accounts = await prisma.userSpotifyAccount.findMany({

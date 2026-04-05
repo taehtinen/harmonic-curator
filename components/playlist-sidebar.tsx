@@ -9,6 +9,7 @@ import type { ArtistsHrefContext } from "@/lib/artists-url";
 export default function PlaylistSidebar({
   playlist,
   closeHref,
+  editHref,
   generatePlaylistAction,
   generatePlaylistReturnToHref,
   publishPlaylistAction,
@@ -18,6 +19,7 @@ export default function PlaylistSidebar({
 }: {
   playlist: PlaylistWithSidebarTracks;
   closeHref: string;
+  editHref: string;
   generatePlaylistAction: (formData: FormData) => Promise<void>;
   generatePlaylistReturnToHref: string;
   publishPlaylistAction: (formData: FormData) => Promise<void>;
@@ -30,6 +32,7 @@ export default function PlaylistSidebar({
       <PlaylistSidebarDetails
         playlist={playlist}
         closeHref={closeHref}
+        editHref={editHref}
         generatePlaylistAction={generatePlaylistAction}
         generatePlaylistReturnToHref={generatePlaylistReturnToHref}
         publishPlaylistAction={publishPlaylistAction}

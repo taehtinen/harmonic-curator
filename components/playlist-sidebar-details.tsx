@@ -17,6 +17,7 @@ function formatDateTimeOrDash(value: Date | null) {
 export default function PlaylistSidebarDetails({
   playlist,
   closeHref,
+  editHref,
   generatePlaylistAction,
   generatePlaylistReturnToHref,
   publishPlaylistAction,
@@ -25,39 +26,58 @@ export default function PlaylistSidebarDetails({
 }: {
   playlist: Playlist;
   closeHref: string;
+  editHref: string;
   generatePlaylistAction: (formData: FormData) => Promise<void>;
   generatePlaylistReturnToHref: string;
   publishPlaylistAction: (formData: FormData) => Promise<void>;
   hasLinkedSpotify: boolean;
   publishFlash: PublishFlash;
 }) {
+  const canPublishToSpotify = hasLinkedSpotify && playlist.spotifyId != null;
+
   return (
     <section className="shrink-0 p-5">
       <div className="flex items-start justify-between gap-4">
         <h2 className="min-w-0 text-xl font-semibold tracking-tight">
-          <a
-            href={`https://open.spotify.com/playlist/${playlist.spotifyId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Open playlist on Spotify"
-            className="inline-flex min-w-0 max-w-full items-center gap-1.5 text-blue-600 underline-offset-2 hover:underline dark:text-blue-400"
-          >
-            <span className="truncate">{playlist.name}</span>
-            <SpotifyIcon className="h-4 w-4 shrink-0 opacity-90" />
-          </a>
+          {playlist.spotifyId ? (
+            <a
+              href={`https://open.spotify.com/playlist/${playlist.spotifyId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Open playlist on Spotify"
+              className="inline-flex min-w-0 max-w-full items-center gap-1.5 text-blue-600 underline-offset-2 hover:underline dark:text-blue-400"
+            >
+              <span className="truncate">{playlist.name}</span>
+              <SpotifyIcon className="h-4 w-4 shrink-0 opacity-90" />
+            </a>
+          ) : (
+            <span className="block min-w-0 truncate">{playlist.name}</span>
+          )}
         </h2>
-        <Link
-          href={closeHref}
-          className="shrink-0 rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
-        >
-          Close
-        </Link>
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          <Link
+            href={editHref}
+            className="rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+          >
+            Edit
+          </Link>
+          <Link
+            href={closeHref}
+            className="rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+          >
+            Close
+          </Link>
+        </div>
       </div>
 
       <div className="mt-5 flex flex-col gap-6 sm:flex-row sm:items-start sm:gap-8">
         <dl className="grid min-w-0 flex-1 grid-cols-[auto,1fr] gap-x-4 gap-y-3 text-sm">
           <dt className="text-zinc-500 dark:text-zinc-400">Spotify ID</dt>
-          <dd className="font-mono text-xs text-zinc-800 dark:text-zinc-200">{playlist.spotifyId}</dd>
+          <dd className="font-mono text-xs text-zinc-800 dark:text-zinc-200">
+            {playlist.spotifyId ?? (
+              <span className="font-sans text-zinc-400 dark:text-zinc-500">—</span>
+            )}
+          </dd>
 
           <dt className="text-zinc-500 dark:text-zinc-400">Description</dt>
           <dd className="min-w-0 whitespace-pre-wrap break-words text-zinc-800 dark:text-zinc-200">
@@ -132,11 +152,13 @@ export default function PlaylistSidebarDetails({
               <input type="hidden" name="returnTo" value={generatePlaylistReturnToHref} />
               <button
                 type="submit"
-                disabled={!hasLinkedSpotify}
+                disabled={!canPublishToSpotify}
                 title={
-                  hasLinkedSpotify
+                  canPublishToSpotify
                     ? undefined
-                    : "Link a Spotify account in Settings to publish."
+                    : !hasLinkedSpotify
+                      ? "Link a Spotify account in Settings to publish."
+                      : "This playlist is not linked to Spotify yet."
                 }
                 className="w-full rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
               >

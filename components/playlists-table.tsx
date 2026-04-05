@@ -16,6 +16,9 @@ export default function PlaylistsTable({
   playlists,
   panelOpen,
   selectedPlaylistId,
+  preserveNewPlaylist,
+  preserveEditPlaylist,
+  newPlaylistHref,
   sort,
   order,
   searchQuery,
@@ -28,6 +31,9 @@ export default function PlaylistsTable({
   playlists: Playlist[];
   panelOpen: boolean;
   selectedPlaylistId?: string;
+  preserveNewPlaylist: boolean;
+  preserveEditPlaylist: boolean;
+  newPlaylistHref: string;
   sort: string;
   order: string;
   searchQuery: string;
@@ -53,6 +59,8 @@ export default function PlaylistsTable({
           {selectedPlaylistId ? (
             <input type="hidden" name="playlist" value={selectedPlaylistId} />
           ) : null}
+          {preserveNewPlaylist ? <input type="hidden" name="new" value="1" /> : null}
+          {preserveEditPlaylist ? <input type="hidden" name="edit" value="1" /> : null}
           <label htmlFor="playlists-name-search" className="sr-only">
             Search playlists by name
           </label>
@@ -72,6 +80,12 @@ export default function PlaylistsTable({
             Search
           </button>
         </form>
+        <Link
+          href={newPlaylistHref}
+          className="shrink-0 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+        >
+          New playlist
+        </Link>
         {hasSearch ? (
           <Link
             href={clearSearchHref}
