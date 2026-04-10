@@ -1,4 +1,5 @@
 import Link from "next/link";
+import PlaylistDeleteForm from "@/components/playlist-delete-form";
 import SpotifyIcon from "@/components/spotify-icon";
 import type { PublishFlash } from "@/components/playlist-sidebar-types";
 import type { Playlist } from "@prisma/client";
@@ -18,6 +19,8 @@ export default function PlaylistSidebarDetails({
   playlist,
   closeHref,
   editHref,
+  deletePlaylistAction,
+  deleteReturnToHref,
   generatePlaylistAction,
   generatePlaylistReturnToHref,
   publishPlaylistAction,
@@ -27,6 +30,8 @@ export default function PlaylistSidebarDetails({
   playlist: Playlist;
   closeHref: string;
   editHref: string;
+  deletePlaylistAction: (formData: FormData) => Promise<void>;
+  deleteReturnToHref: string;
   generatePlaylistAction: (formData: FormData) => Promise<void>;
   generatePlaylistReturnToHref: string;
   publishPlaylistAction: (formData: FormData) => Promise<void>;
@@ -61,6 +66,12 @@ export default function PlaylistSidebarDetails({
           >
             Edit
           </Link>
+          <PlaylistDeleteForm
+            action={deletePlaylistAction}
+            playlistId={playlist.id.toString()}
+            returnTo={deleteReturnToHref}
+            playlistName={playlist.name}
+          />
           <Link
             href={closeHref}
             className="rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"

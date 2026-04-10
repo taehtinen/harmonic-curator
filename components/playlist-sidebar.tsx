@@ -10,6 +10,8 @@ export default function PlaylistSidebar({
   playlist,
   closeHref,
   editHref,
+  deletePlaylistAction,
+  deleteReturnToHref,
   generatePlaylistAction,
   generatePlaylistReturnToHref,
   publishPlaylistAction,
@@ -20,6 +22,8 @@ export default function PlaylistSidebar({
   playlist: PlaylistWithSidebarTracks;
   closeHref: string;
   editHref: string;
+  deletePlaylistAction: (formData: FormData) => Promise<void>;
+  deleteReturnToHref: string;
   generatePlaylistAction: (formData: FormData) => Promise<void>;
   generatePlaylistReturnToHref: string;
   publishPlaylistAction: (formData: FormData) => Promise<void>;
@@ -33,6 +37,8 @@ export default function PlaylistSidebar({
         playlist={playlist}
         closeHref={closeHref}
         editHref={editHref}
+        deletePlaylistAction={deletePlaylistAction}
+        deleteReturnToHref={deleteReturnToHref}
         generatePlaylistAction={generatePlaylistAction}
         generatePlaylistReturnToHref={generatePlaylistReturnToHref}
         publishPlaylistAction={publishPlaylistAction}

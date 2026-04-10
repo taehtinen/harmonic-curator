@@ -425,6 +425,33 @@ export default async function Playlists({
     }
   }
 
+  async function deletePlaylist(formData: FormData) {
+    "use server";
+
+    const actingUser = await requireUser();
+    const playlistIdValue = formData.get("playlistId");
+    const returnToValue = formData.get("returnTo");
+    if (typeof playlistIdValue !== "string" || typeof returnToValue !== "string") {
+      throw new Error("Invalid delete playlist request payload.");
+    }
+
+    if (!/^\d+$/.test(playlistIdValue)) {
+      throw new Error("Invalid playlist id.");
+    }
+
+    const playlistId = BigInt(playlistIdValue);
+    const owned = await prisma.playlist.findFirst({
+      where: { id: playlistId, userId: BigInt(actingUser.id) },
+      select: { id: true },
+    });
+    if (!owned) {
+      throw new Error("Playlist not found.");
+    }
+
+    await prisma.playlist.delete({ where: { id: playlistId } });
+    redirect(returnToValue);
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-zinc-50 font-sans dark:bg-black">
       <main className="flex min-h-0 w-full max-w-none flex-1 flex-col gap-4 overflow-hidden bg-white px-6 py-4 text-zinc-900 dark:bg-black dark:text-zinc-50">
@@ -545,6 +572,8 @@ export default async function Playlists({
               playlist={selectedPlaylist}
               closeHref={closePlaylistHref}
               editHref={playlistEditHref}
+              deletePlaylistAction={deletePlaylist}
+              deleteReturnToHref={closePlaylistHref}
               generatePlaylistAction={generatePlaylistFromCriteria}
               generatePlaylistReturnToHref={playlistPanelReturnToHref}
               publishPlaylistAction={publishPlaylistToSpotify}
