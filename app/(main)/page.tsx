@@ -9,6 +9,7 @@ export default function Home({
     order?: string;
     artist?: string;
     q?: string;
+    noGenres?: string;
   }>;
 }) {
   return <Artists searchParams={searchParams} />;

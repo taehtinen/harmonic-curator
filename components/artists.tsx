@@ -58,6 +58,10 @@ function parseOrder(orderParam: string | undefined): SortOrder {
   return "desc";
 }
 
+function parseNoGenresFilter(param: string | undefined): boolean {
+  return param === "1" || param === "on" || param === "true";
+}
+
 export default async function Artists({
   searchParams,
 }: {
@@ -67,6 +71,7 @@ export default async function Artists({
     order?: string;
     artist?: string;
     q?: string;
+    noGenres?: string;
   }>;
 }) {
   const {
@@ -75,8 +80,10 @@ export default async function Artists({
     order: orderParam,
     artist: artistParam,
     q: qParam,
+    noGenres: noGenresParam,
   } = await searchParams;
   const q = (qParam ?? "").trim();
+  const noGenres = parseNoGenresFilter(noGenresParam);
   const sort = parseSort(sortParam);
   const order = parseOrder(orderParam);
   const rawPage = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
@@ -93,6 +100,7 @@ export default async function Artists({
           },
         }
       : {}),
+    ...(noGenres ? { genres: { equals: [] as string[] } } : {}),
   };
 
   const total = await prisma.artist.count({ where: listWhere });
@@ -119,6 +127,9 @@ export default async function Artists({
       q.length > 0
         ? Prisma.sql`AND a.name ILIKE ${`%${escapeLikePattern(q)}%`} ESCAPE '\\'`
         : Prisma.empty;
+    const noGenresSql = noGenres
+      ? Prisma.sql`AND cardinality(a.genres) = 0`
+      : Prisma.empty;
 
     const idRows = await prisma.$queryRaw<{ id: bigint }[]>`
       SELECT a.id
@@ -130,6 +141,7 @@ export default async function Artists({
       ) al ON true
       WHERE a."isIgnored" = false
       ${searchSql}
+      ${noGenresSql}
       ORDER BY al.max_rd ${orderSql}, a.id ASC
       LIMIT ${ARTISTS_PER_PAGE}
       OFFSET ${skip}
@@ -215,7 +227,7 @@ export default async function Artists({
     : null;
   const panelOpen = Boolean(selectedArtistWithTracks);
   const openArtistId = selectedArtistWithTracks?.id.toString();
-  const closeArtistHref = buildArtistsUrl({ page, sort, order, q });
+  const closeArtistHref = buildArtistsUrl({ page, sort, order, q, noGenres });
 
   async function ignoreArtist(formData: FormData) {
     "use server";
@@ -340,11 +352,13 @@ export default async function Artists({
               sort={sort}
               order={order}
               searchQuery={q}
+              noGenresFilter={noGenres}
               clearSearchHref={buildArtistsUrl({
                 page: 1,
                 sort,
                 order,
                 artistId: openArtistId,
+                noGenres,
               })}
               sortArrow={sortArrow}
               nameSortHref={buildArtistsUrl({
@@ -353,6 +367,7 @@ export default async function Artists({
                 order: nextOrder("name"),
                 artistId: openArtistId,
                 q,
+                noGenres,
               })}
               spotifySortHref={buildArtistsUrl({
                 page: pageForSort("spotifyId"),
@@ -360,6 +375,7 @@ export default async function Artists({
                 order: nextOrder("spotifyId"),
                 artistId: openArtistId,
                 q,
+                noGenres,
               })}
               popularitySortHref={buildArtistsUrl({
                 page: pageForSort("popularity"),
@@ -367,6 +383,7 @@ export default async function Artists({
                 order: nextOrder("popularity"),
                 artistId: openArtistId,
                 q,
+                noGenres,
               })}
               followersSortHref={buildArtistsUrl({
                 page: pageForSort("followers"),
@@ -374,6 +391,7 @@ export default async function Artists({
                 order: nextOrder("followers"),
                 artistId: openArtistId,
                 q,
+                noGenres,
               })}
               tracksSortHref={buildArtistsUrl({
                 page: pageForSort("tracks"),
@@ -381,6 +399,7 @@ export default async function Artists({
                 order: nextOrder("tracks"),
                 artistId: openArtistId,
                 q,
+                noGenres,
               })}
               latestReleaseSortHref={buildArtistsUrl({
                 page: pageForSort("latestRelease"),
@@ -388,6 +407,7 @@ export default async function Artists({
                 order: nextOrder("latestRelease"),
                 artistId: openArtistId,
                 q,
+                noGenres,
               })}
               getRowHref={(artistId) =>
                 buildArtistsUrl({
@@ -396,6 +416,7 @@ export default async function Artists({
                   order,
                   artistId,
                   q,
+                  noGenres,
                 })
               }
             />
@@ -414,6 +435,7 @@ export default async function Artists({
                         order,
                         artistId: openArtistId,
                         q,
+                        noGenres,
                       })}
                       className="rounded-lg border border-zinc-200 bg-white px-3 py-2 font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
                     >
@@ -428,6 +450,7 @@ export default async function Artists({
                         order,
                         artistId: openArtistId,
                         q,
+                        noGenres,
                       })}
                       className="rounded-lg border border-zinc-200 bg-white px-3 py-2 font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
                     >
@@ -455,8 +478,9 @@ export default async function Artists({
                 order,
                 artistId: selectedArtistWithTracks.id.toString(),
                 q,
+                noGenres,
               })}
-              artistsHrefContext={{ page, sort, order, q }}
+              artistsHrefContext={{ page, sort, order, q, noGenres }}
             />
           )}
         </div>

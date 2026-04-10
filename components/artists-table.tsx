@@ -17,6 +17,7 @@ export default function ArtistsTable({
   sort,
   order,
   searchQuery,
+  noGenresFilter,
   clearSearchHref,
   sortArrow,
   nameSortHref,
@@ -33,6 +34,7 @@ export default function ArtistsTable({
   sort: string;
   order: string;
   searchQuery: string;
+  noGenresFilter: boolean;
   clearSearchHref: string;
   sortArrow: (col: SortColumn) => ReactElement | null;
   nameSortHref: string;
@@ -70,6 +72,16 @@ export default function ArtistsTable({
             autoComplete="off"
             className="min-w-[12rem] flex-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/30 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:border-zinc-500 dark:focus:ring-zinc-500/30"
           />
+          <label className="flex shrink-0 cursor-pointer items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+            <input
+              type="checkbox"
+              name="noGenres"
+              value="1"
+              defaultChecked={noGenresFilter}
+              className="h-4 w-4 rounded border-zinc-300 text-zinc-900 focus:ring-2 focus:ring-zinc-400/30 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:ring-zinc-500/30"
+            />
+            No genres
+          </label>
           <button
             type="submit"
             className="shrink-0 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
@@ -156,7 +168,9 @@ export default function ArtistsTable({
               >
                 {hasSearch
                   ? "No artists match your search."
-                  : "No artists found. Seed the database to see data here."}
+                  : noGenresFilter
+                    ? "No artists without genres."
+                    : "No artists found. Seed the database to see data here."}
               </td>
             </tr>
           ) : (
