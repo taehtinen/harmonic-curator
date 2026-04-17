@@ -22,7 +22,6 @@ export default function PlaylistsTable({
   sort,
   order,
   searchQuery,
-  clearSearchHref,
   sortArrow,
   nameSortHref,
   lastPublishedSortHref,
@@ -37,7 +36,6 @@ export default function PlaylistsTable({
   sort: string;
   order: string;
   searchQuery: string;
-  clearSearchHref: string;
   sortArrow: (col: PlaylistsListSort) => ReactElement | null;
   nameSortHref: string;
   lastPublishedSortHref: string;
@@ -86,14 +84,6 @@ export default function PlaylistsTable({
         >
           New playlist
         </Link>
-        {hasSearch ? (
-          <Link
-            href={clearSearchHref}
-            className="shrink-0 text-sm font-medium text-zinc-600 underline-offset-2 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
-          >
-            Clear
-          </Link>
-        ) : null}
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
         <table className="min-w-full border-collapse text-sm">

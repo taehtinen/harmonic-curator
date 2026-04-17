@@ -470,15 +470,6 @@ export default async function Playlists({
               sort={sort}
               order={order}
               searchQuery={q}
-              clearSearchHref={buildPlaylistsUrl({
-                page: 1,
-                sort,
-                order,
-                playlistId: openPlaylistId,
-                q,
-                newPlaylist: showNewPlaylist,
-                editPlaylist: showEditPlaylist,
-              })}
               sortArrow={sortArrow}
               nameSortHref={buildPlaylistsUrl({
                 page: pageForSort("name"),
