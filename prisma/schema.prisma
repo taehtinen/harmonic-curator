@@ -46,8 +46,21 @@ model User {
   playlists           Playlist[]
   spotifyAccounts     UserSpotifyAccount[]
   loginAttempts       LoginAttempt[]
+  shouts              Shout[]
 
   @@map("user")
+}
+
+model Shout {
+  id        BigInt   @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  userId    BigInt
+  body      String   @db.VarChar(500)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@map("shout")
 }
 
 model LoginAttempt {

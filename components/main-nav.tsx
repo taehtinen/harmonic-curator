@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import SignOutButton from "@/components/sign-out-button";
 
 const mainTabs = [
-  { href: "/", label: "Home" },
+  { href: "/", label: "Shoutbox" },
   { href: "/artists", label: "Artists" },
   { href: "/playlists", label: "Playlists" },
 ] as const;
