@@ -2,8 +2,7 @@
  * Temporal gRPC client for server-side code (Route Handlers, Server Actions).
  * Use `export const runtime = "nodejs"` on routes if they might otherwise run on Edge.
  *
- * Workers are long-lived: run them in a separate process (e.g. `tsx scripts/temporal-worker.ts`)
- * and add an npm script when you define workflows — not inside `next dev`.
+ * Workers are long-lived: run them in a separate process (`npm run temporal:worker`), not inside `next dev`.
  */
 import { Client, Connection } from "@temporalio/client";
 
@@ -14,12 +13,7 @@ const globalForTemporal = globalThis as unknown as {
 
 function temporalAddress(): string {
   const addr = process.env.TEMPORAL_ADDRESS?.trim();
-  if (!addr) {
-    throw new Error(
-      "TEMPORAL_ADDRESS is not set. With local Docker Compose, use 127.0.0.1:7233 (see .env.example).",
-    );
-  }
-  return addr;
+  return addr || "127.0.0.1:7233";
 }
 
 function temporalNamespace(): string {

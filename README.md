@@ -8,6 +8,7 @@ Internal tool for pulling **Spotify** metadata into **PostgreSQL**, browsing **a
 - **Tailwind CSS** 4
 - **Prisma** 6 + **PostgreSQL**
 - **Spotify Web API** (client-credentials; see [`lib/spotifyClient.ts`](lib/spotifyClient.ts))
+- **Temporal** (optional): [`@temporalio/client`](https://www.npmjs.com/package/@temporalio/client) in the app, [`@temporalio/worker`](https://www.npmjs.com/package/@temporalio/worker) in a separate Node process for durable **single-artist** seeding (see [`temporal/workflows.ts`](temporal/workflows.ts) and [`scripts/temporal-worker.ts`](scripts/temporal-worker.ts))
 
 ## Features (current)
 
@@ -52,6 +53,9 @@ Create a `.env` in the project root (Prisma reads `DATABASE_URL` via [`prisma.co
 | `SPOTIFY_MARKET` | Seeds + `SpotifyClient` | ISO market code for artist/track requests (e.g. `FI`) |
 | `SPOTIFY_USER_ID` | `SpotifyClient` | Spotify user ID (required to construct the client; playlist create/add helpers target this user) |
 | `SEED_TOP_TRACKS_BATCH` | Optional | Positive integer batch size for `seed-top-tracks` (default `10`) |
+| `TEMPORAL_ADDRESS` | Temporal seeds + worker | gRPC address (default `127.0.0.1:7233` if unset; matches [`docker-compose.yml`](docker-compose.yml) port `7233`) |
+| `TEMPORAL_NAMESPACE` | Temporal seeds + worker | Temporal namespace (default `default`) |
+| `TEMPORAL_TASK_QUEUE` | Temporal seeds + worker | Task queue name shared by worker and starter (default `harmonic-curator`) |
 
 ## Setup
 
@@ -66,6 +70,16 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+### Temporal (optional)
+
+[`docker-compose.yml`](docker-compose.yml) runs **PostgreSQL**, **Temporal** (`7233`), and **Temporal UI** (`8080`). The worker is **not** started by Next.js: run `npm run temporal:worker` in its own terminal when you want to execute workflows.
+
+1. `docker compose up -d` (or at least `db` + `temporal` + `temporal-ui`)
+2. `npm run temporal:worker`
+3. `npm run temporal:seed-artist -- <id-or-url>` — same artist argument as `seed:artist`; runs the [`seedArtist`](temporal/workflows.ts) workflow and waits for the result
+
+Temporal UI: [http://localhost:8080](http://localhost:8080). The workflow uses the same `DATABASE_URL` and Spotify variables as the direct CLI. When starting **seedArtist** from the UI, set workflow type to `seedArtist`, task queue to `harmonic-curator` (unless overridden), and **Input** to either a JSON array with one string (`["4Z8W4fKeB5YxbusRsdQVPb"]`) or a single object whose field is a string (`{"spotifyArtistId":"4Z8W4fKeB5YxbusRsdQVPb"}`). A bare id without JSON quotes is invalid (it parses as a number).
+
 ## NPM scripts
 
 | Script | Purpose |
@@ -78,6 +92,8 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run db:migrate:reset` | **Destructive**: reset DB and re-apply migrations |
 | `npm run seed:artists` | Search fixed Finnish-related queries on Spotify and upsert **artists** |
 | `npm run seed:artist -- <id-or-url>` | Upsert a single artist by Spotify ID, `spotify:artist:…`, or open.spotify.com URL |
+| `npm run temporal:worker` | Poll Temporal for workflow tasks (run separately from `next dev`) |
+| `npm run temporal:seed-artist -- <id-or-url>` | Start **seedArtist** workflow and print the result (requires Temporal + worker) |
 | `npm run seed:artist-catalog -- <id-or-url>` | Upsert one artist and sync **albums and tracks** from Spotify (full catalog pass for that artist) |
 | `npm run seed:top-tracks` | Batch-fetch top tracks for artists missing or stale refresh; upserts **albums** and **tracks** |
 | `npm run seed:playlist-tracks -- <id-or-url>` | Create or update a **playlist** row, import track order from Spotify, ensure artists/tracks in DB, and rewrite local `playlist_track` rows |
@@ -97,7 +113,10 @@ Typical flow: configure `.env` → migrate → `seed:artists` and/or `seed:artis
 - [`lib/prisma.ts`](lib/prisma.ts) — Shared Prisma client
 - [`lib/playlist-generate-from-criteria.ts`](lib/playlist-generate-from-criteria.ts) — Criteria → track ID selection for playlist generation
 - [`lib/playlist-timestamps.ts`](lib/playlist-timestamps.ts) — Helpers for playlist edit / import timestamps
-- [`scripts/`](scripts/) — CLI seeds using `tsx`
+- [`lib/temporal/client.ts`](lib/temporal/client.ts) — Temporal client for server-side code
+- [`lib/seed/seedArtistFromSpotifyId.ts`](lib/seed/seedArtistFromSpotifyId.ts) — Shared single-artist upsert (CLI + Temporal activity)
+- [`temporal/workflows.ts`](temporal/workflows.ts), [`temporal/activities.ts`](temporal/activities.ts) — Temporal workflow and activity implementations
+- [`scripts/`](scripts/) — CLI seeds and Temporal worker / workflow starter using `tsx`
 
 ## Spotify client note
 

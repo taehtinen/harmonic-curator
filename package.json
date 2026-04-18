@@ -17,11 +17,14 @@
     "seed:playlist-tracks": "tsx scripts/seed-playlist-tracks.ts",
     "seed:create-user": "tsx scripts/seed-create-user.ts",
     "seed:update-user": "tsx scripts/seed-update-user.ts",
-    "seed:genre-playlists": "tsx scripts/seed-genre-playlists.ts"
+    "seed:genre-playlists": "tsx scripts/seed-genre-playlists.ts",
+    "temporal:worker": "tsx scripts/temporal-worker.ts",
+    "temporal:seed-artist": "tsx scripts/start-seed-artist-workflow.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.1.0",
     "@temporalio/client": "^1.16.0",
+    "@temporalio/worker": "^1.16.0",
     "argon2": "^0.44.0",
     "next": "16.1.6",
     "next-auth": "^5.0.0-beta.30",
