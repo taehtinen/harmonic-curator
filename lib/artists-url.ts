@@ -3,7 +3,7 @@ export type ArtistsListSort =
   | "spotifyId"
   | "popularity"
   | "followers"
-  | "tracks"
+  | "updatedAt"
   | "latestRelease";
 export type ArtistsListOrder = "asc" | "desc";
 

@@ -22,7 +22,7 @@ const SORT_COLUMNS: SortColumn[] = [
   "spotifyId",
   "popularity",
   "followers",
-  "tracks",
+  "updatedAt",
   "latestRelease",
 ];
 
@@ -43,12 +43,13 @@ function artistListOrderBy(
       return { popularity: order };
     case "followers":
       return { followers: order };
-    case "tracks":
-      return { tracks: { _count: order } };
+    case "updatedAt":
+      return { updatedAt: order };
   }
 }
 
 function parseSort(sortParam: string | undefined): SortColumn {
+  if (sortParam === "tracks") return "updatedAt";
   if (sortParam && SORT_COLUMNS.includes(sortParam as SortColumn))
     return sortParam as SortColumn;
   return "latestRelease";
@@ -109,7 +110,6 @@ export default async function Artists({
   const page = Math.min(rawPage, Math.max(1, totalPages));
   const skip = (page - 1) * ARTISTS_PER_PAGE;
   const listInclude = {
-    _count: { select: { tracks: true } },
     albums: {
       orderBy: { releaseDate: "desc" as const },
       take: 1,
@@ -388,10 +388,10 @@ export default async function Artists({
                 q,
                 noGenres,
               })}
-              tracksSortHref={buildArtistsUrl({
-                page: pageForSort("tracks"),
-                sort: "tracks",
-                order: nextOrder("tracks"),
+              updatedAtSortHref={buildArtistsUrl({
+                page: pageForSort("updatedAt"),
+                sort: "updatedAt",
+                order: nextOrder("updatedAt"),
                 artistId: openArtistId,
                 q,
                 noGenres,

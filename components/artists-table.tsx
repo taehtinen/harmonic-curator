@@ -4,8 +4,34 @@ import type { Artist } from "@prisma/client";
 import type { ArtistsHrefContext, ArtistsListSort } from "@/lib/artists-url";
 import ArtistsAddArtistButton from "@/components/artists-add-artist-button";
 
+function formatLocalDateOnly(d: Date): string {
+  return d.toLocaleDateString(undefined, { dateStyle: "medium" });
+}
+
+/**
+ * Spotify album `release_date`: `YYYY`, `YYYY-MM`, or `YYYY-MM-DD` (calendar dates).
+ */
+function formatSpotifyReleaseDateLocal(releaseDate: string): string {
+  const m = /^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$/.exec(releaseDate.trim());
+  if (!m) return releaseDate;
+  const year = Number(m[1]);
+  const month = m[2] != null ? Number(m[2]) - 1 : 0;
+  const day = m[3] != null ? Number(m[3]) : 1;
+  if (!Number.isFinite(year) || month < 0 || month > 11 || day < 1 || day > 31) {
+    return releaseDate;
+  }
+  const parsed = new Date(year, month, m[3] != null ? day : 1);
+  if (Number.isNaN(parsed.getTime())) return releaseDate;
+  if (m[2] == null) {
+    return parsed.toLocaleDateString(undefined, { year: "numeric" });
+  }
+  if (m[3] == null) {
+    return parsed.toLocaleDateString(undefined, { year: "numeric", month: "short" });
+  }
+  return parsed.toLocaleDateString(undefined, { dateStyle: "medium" });
+}
+
 export type ArtistListRow = Artist & {
-  _count: { tracks: number };
   albums: { releaseDate: string }[];
 };
 
@@ -24,7 +50,7 @@ export default function ArtistsTable({
   spotifySortHref,
   popularitySortHref,
   followersSortHref,
-  tracksSortHref,
+  updatedAtSortHref,
   latestReleaseSortHref,
   getRowHref,
   canAddArtist,
@@ -42,7 +68,7 @@ export default function ArtistsTable({
   spotifySortHref: string;
   popularitySortHref: string;
   followersSortHref: string;
-  tracksSortHref: string;
+  updatedAtSortHref: string;
   latestReleaseSortHref: string;
   getRowHref: (artistId: string) => string;
   canAddArtist: boolean;
@@ -139,11 +165,11 @@ export default function ArtistsTable({
             </th>
             <th className="px-4 py-3 text-right">
               <Link
-                href={tracksSortHref}
+                href={updatedAtSortHref}
                 className="flex w-full cursor-pointer select-none items-center justify-between gap-2 hover:text-zinc-700 dark:hover:text-zinc-200"
               >
-                <span>Tracks</span>
-                {sortArrow("tracks")}
+                <span>Updated</span>
+                {sortArrow("updatedAt")}
               </Link>
             </th>
             <th className="px-4 py-3">
@@ -249,14 +275,16 @@ export default function ArtistsTable({
                       {artist.followers.toLocaleString()}
                     </Link>
                   </td>
-                  <td className="p-0 text-right tabular-nums">
+                  <td className="p-0 text-right font-medium">
                     <Link href={rowHref} className={rowBaseClass}>
-                      {artist._count.tracks.toLocaleString()}
+                      {formatLocalDateOnly(artist.updatedAt)}
                     </Link>
                   </td>
-                  <td className="max-w-[8rem] truncate p-0 text-xs text-zinc-600 dark:text-zinc-300">
-                    <Link href={rowHref} className={rowBaseClass}>
-                      {artist.albums[0]?.releaseDate ?? "—"}
+                  <td className="max-w-[12rem] truncate p-0 font-medium">
+                    <Link href={rowHref} className={`${rowBaseClass} truncate`}>
+                      {artist.albums[0]
+                        ? formatSpotifyReleaseDateLocal(artist.albums[0].releaseDate)
+                        : "—"}
                     </Link>
                   </td>
                 </tr>
