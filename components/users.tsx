@@ -1,7 +1,7 @@
 import { UserStatus } from "@prisma/client";
 
 import { requireAdmin } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { listUsersForAdminView } from "@/lib/user-list-admin";
 
 function formatWhen(d: Date) {
   return d.toLocaleString(undefined, {
@@ -13,16 +13,7 @@ function formatWhen(d: Date) {
 export default async function Users() {
   const currentUser = await requireAdmin();
 
-  const rows = await prisma.user.findMany({
-    select: {
-      id: true,
-      username: true,
-      status: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-    orderBy: { username: "asc" },
-  });
+  const rows = await listUsersForAdminView();
 
   return (
     <div className="mx-auto max-w-4xl flex-1 overflow-auto px-6 py-8">
@@ -50,10 +41,10 @@ export default async function Users() {
             </thead>
             <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
               {rows.map((u) => {
-                const isSelf = currentUser.id === u.id.toString();
+                const isSelf = currentUser.id === u.id;
                 return (
                   <tr
-                    key={u.id.toString()}
+                    key={u.id}
                     className={
                       isSelf
                         ? "bg-emerald-50/60 dark:bg-emerald-950/25"
