@@ -15,6 +15,35 @@ function formatDateTimeOrDash(value: Date | null) {
   return value == null ? "—" : formatDateTime(value);
 }
 
+/** Latest of track-list edits and any playlist row update (name, settings, etc.). */
+function playlistLastEditedAt(playlist: Playlist): Date {
+  const row = playlist.updatedAt.getTime();
+  const tracks = playlist.lastTrackEditAt?.getTime();
+  if (tracks == null) return playlist.updatedAt;
+  return new Date(Math.max(tracks, row));
+}
+
+function isPublishedOlderThanEditedByOneSecond(
+  published: Date | null,
+  edited: Date,
+): boolean {
+  return published != null && published.getTime() < edited.getTime() - 1000;
+}
+
+function StalePublishWarningIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
+    </svg>
+  );
+}
+
 export default function PlaylistSidebarDetails({
   playlist,
   closeHref,
@@ -39,6 +68,11 @@ export default function PlaylistSidebarDetails({
   publishFlash: PublishFlash;
 }) {
   const canPublishToSpotify = hasLinkedSpotify;
+  const lastEditedAt = playlistLastEditedAt(playlist);
+  const publishedOutOfDate = isPublishedOlderThanEditedByOneSecond(
+    playlist.lastSpotifyPublishAt,
+    lastEditedAt,
+  );
 
   return (
     <section className="shrink-0 p-5">
@@ -99,7 +133,7 @@ export default function PlaylistSidebarDetails({
           <div>
             <dt className="text-zinc-500 dark:text-zinc-400">Last edited</dt>
             <dd className="mt-0.5 tabular-nums text-zinc-800 dark:text-zinc-200">
-              {formatDateTimeOrDash(playlist.lastTrackEditAt)}
+              {formatDateTime(lastEditedAt)}
             </dd>
           </div>
           <div className="space-y-2">
@@ -115,8 +149,35 @@ export default function PlaylistSidebarDetails({
             </form>
           </div>
           <div>
-            <dt className="text-zinc-500 dark:text-zinc-400">Last published</dt>
-            <dd className="mt-0.5 tabular-nums text-zinc-800 dark:text-zinc-200">
+            <dt
+              className={
+                publishedOutOfDate
+                  ? "inline-flex items-center gap-1 text-amber-700 dark:text-amber-400"
+                  : "text-zinc-500 dark:text-zinc-400"
+              }
+              title={
+                publishedOutOfDate
+                  ? "Playlist changed after this publish; publish again to sync Spotify."
+                  : undefined
+              }
+            >
+              {publishedOutOfDate ? (
+                <StalePublishWarningIcon className="h-3.5 w-3.5 shrink-0" />
+              ) : null}
+              Last published
+            </dt>
+            <dd
+              className={
+                publishedOutOfDate
+                  ? "mt-0.5 tabular-nums text-amber-800 dark:text-amber-300"
+                  : "mt-0.5 tabular-nums text-zinc-800 dark:text-zinc-200"
+              }
+              title={
+                publishedOutOfDate
+                  ? "Playlist changed after this publish; publish again to sync Spotify."
+                  : undefined
+              }
+            >
               {formatDateTimeOrDash(playlist.lastSpotifyPublishAt)}
             </dd>
           </div>
