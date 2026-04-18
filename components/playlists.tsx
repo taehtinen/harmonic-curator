@@ -14,7 +14,6 @@ import PlaylistSidebarNew from "@/components/playlist-sidebar-new";
 import PlaylistsTable from "@/components/playlists-table";
 import {
   buildPlaylistsUrl,
-  withPlaylistParam,
   type PlaylistsListOrder,
   type PlaylistsListSort,
 } from "@/lib/playlists-url";
@@ -151,6 +150,7 @@ export default async function Playlists({
     edit?: string;
     publish?: string;
     publish_err?: string;
+    saved?: string;
   }>;
 }) {
   const {
@@ -163,6 +163,7 @@ export default async function Playlists({
     edit: editParam,
     publish: publishParam,
     publish_err: publishErrParam,
+    saved: savedParam,
   } = await searchParams;
   const q = (qParam ?? "").trim();
   const sort = parseSort(sortParam);
@@ -179,6 +180,9 @@ export default async function Playlists({
 
   const publishOk = publishParam === "1";
   const publishErr = publishErrParam?.trim() ?? null;
+
+  const saveFlash =
+    savedParam === "created" || savedParam === "updated" ? savedParam : null;
 
   const listWhere = {
     userId: ownerUserId,
@@ -405,7 +409,11 @@ export default async function Playlists({
           genres,
         },
       });
-      redirect(returnToValue);
+      const updatedUrl = new URL(returnToValue, "http://localhost");
+      updatedUrl.searchParams.set("edit", "1");
+      updatedUrl.searchParams.delete("saved");
+      updatedUrl.searchParams.set("saved", "updated");
+      redirect(`${updatedUrl.pathname}${updatedUrl.search}`);
     } else {
       const created = await prisma.playlist.create({
         data: {
@@ -421,7 +429,13 @@ export default async function Playlists({
         },
         select: { id: true },
       });
-      redirect(withPlaylistParam(returnToValue, created.id.toString()));
+      const createdUrl = new URL(returnToValue, "http://localhost");
+      createdUrl.searchParams.set("playlist", created.id.toString());
+      createdUrl.searchParams.delete("new");
+      createdUrl.searchParams.set("edit", "1");
+      createdUrl.searchParams.delete("saved");
+      createdUrl.searchParams.set("saved", "created");
+      redirect(`${createdUrl.pathname}${createdUrl.search}`);
     }
   }
 
@@ -557,6 +571,7 @@ export default async function Playlists({
               cancelHref={playlistViewHref}
               savePlaylistDetailsAction={savePlaylistDetails}
               saveReturnTo={playlistViewHref}
+              saveFlash={saveFlash}
             />
           ) : selectedPlaylist ? (
             <PlaylistSidebar

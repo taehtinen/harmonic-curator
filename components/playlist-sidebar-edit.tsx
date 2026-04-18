@@ -16,6 +16,7 @@ export default function PlaylistSidebarEdit({
   cancelHref,
   savePlaylistDetailsAction,
   saveReturnTo,
+  saveFlash,
 }: {
   playlistId: string;
   defaultName: string;
@@ -28,6 +29,7 @@ export default function PlaylistSidebarEdit({
   cancelHref: string;
   savePlaylistDetailsAction: (formData: FormData) => Promise<void>;
   saveReturnTo: string;
+  saveFlash: "created" | "updated" | null;
 }) {
   return (
     <aside className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50/80 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/60">
@@ -47,6 +49,7 @@ export default function PlaylistSidebarEdit({
             key={playlistId}
             action={savePlaylistDetailsAction}
             returnTo={saveReturnTo}
+            saveFlash={saveFlash}
             playlistId={playlistId}
             defaultName={defaultName}
             defaultDescription={defaultDescription}
