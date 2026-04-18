@@ -1,16 +1,16 @@
 import MainNav from "@/components/main-nav";
-import { requireUser } from "@/lib/auth";
+import { requireUser, userIsAdmin } from "@/lib/auth";
 
 export default async function MainLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  await requireUser();
+  const user = await requireUser();
 
   return (
     <>
-      <MainNav />
+      <MainNav isAdmin={userIsAdmin(user)} />
       <div className="flex min-h-0 flex-1 flex-col">{children}</div>
     </>
   );

@@ -35,3 +35,14 @@ export async function requireUser(): Promise<CurrentUser> {
 export function userIsAdmin(user: CurrentUser | null): boolean {
   return user?.status === UserStatus.ADMIN;
 }
+
+/**
+ * Use on admin-only pages. Sends anonymous users to `/login`, non-admins to `/`.
+ */
+export async function requireAdmin(): Promise<CurrentUser> {
+  const user = await requireUser();
+  if (!userIsAdmin(user)) {
+    redirect("/");
+  }
+  return user;
+}

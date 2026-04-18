@@ -10,6 +10,8 @@ const mainTabs = [
   { href: "/playlists", label: "Playlists" },
 ] as const;
 
+const usersTab = { href: "/users", label: "Users" } as const;
+
 const settingsTab = { href: "/settings", label: "Settings" } as const;
 
 function isActive(pathname: string, href: string) {
@@ -23,8 +25,9 @@ function navLinkClass(active: boolean) {
     : "rounded-lg px-4 py-2 text-sm font-medium uppercase tracking-wide text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-200";
 }
 
-export default function MainNav() {
+export default function MainNav({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
+  const usersActive = isActive(pathname, usersTab.href);
   const settingsActive = isActive(pathname, settingsTab.href);
 
   return (
@@ -49,6 +52,15 @@ export default function MainNav() {
           })}
         </div>
         <div className="ml-auto flex flex-wrap items-center gap-1">
+          {isAdmin ? (
+            <Link
+              href={usersTab.href}
+              aria-current={usersActive ? "page" : undefined}
+              className={navLinkClass(usersActive)}
+            >
+              {usersTab.label}
+            </Link>
+          ) : null}
           <Link
             href={settingsTab.href}
             aria-current={settingsActive ? "page" : undefined}
