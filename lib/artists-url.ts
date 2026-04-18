@@ -38,5 +38,5 @@ export function buildArtistsUrl(
   if (trimmedQ) sp.set("q", trimmedQ);
   if (noGenres) sp.set("noGenres", "1");
   const qs = sp.toString();
-  return qs ? `/?${qs}` : "/";
+  return qs ? `/artists?${qs}` : "/artists";
 }

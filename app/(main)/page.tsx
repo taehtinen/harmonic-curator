@@ -1,16 +1,3 @@
-import Artists from "@/components/artists";
-
-export default function Home({
-  searchParams,
-}: {
-  searchParams: Promise<{
-    page?: string;
-    sort?: string;
-    order?: string;
-    artist?: string;
-    q?: string;
-    noGenres?: string;
-  }>;
-}) {
-  return <Artists searchParams={searchParams} />;
+export default function HomePage() {
+  return <div className="min-h-0 flex-1" />;
 }
