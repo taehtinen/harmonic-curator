@@ -1,6 +1,7 @@
 import { seedArtist } from "@/temporal/workflows";
 import { getTemporalClient } from "@/lib/temporal/client";
 import { normalizeSpotifyArtistId } from "@/lib/seed/seedArtistFromSpotifyId";
+import { temporalMaximumAttempts } from "@/lib/temporal/maximumAttempts";
 import { temporalTaskQueue } from "@/lib/temporal/taskQueue";
 
 async function main() {
@@ -19,6 +20,7 @@ async function main() {
     taskQueue: temporalTaskQueue(),
     workflowId: `seed-artist-${normalized}-${Date.now()}`,
     args: [raw],
+    retry: { maximumAttempts: temporalMaximumAttempts },
   });
 
   console.log(`Started workflow ${handle.workflowId} run ${handle.firstExecutionRunId}`);

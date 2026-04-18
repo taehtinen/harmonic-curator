@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { normalizeSpotifyArtistId } from "@/lib/seed/seedArtistFromSpotifyId";
 import { getTemporalClient } from "@/lib/temporal/client";
+import { temporalMaximumAttempts } from "@/lib/temporal/maximumAttempts";
 import { temporalTaskQueue } from "@/lib/temporal/taskQueue";
 import { SpotifyClient } from "@/lib/spotifyClient";
 import { seedArtist } from "@/temporal/workflows";
@@ -93,6 +94,7 @@ async function main() {
       taskQueue: temporalTaskQueue(),
       workflowId,
       args: [spotifyArtistId],
+      retry: { maximumAttempts: temporalMaximumAttempts },
     });
     const label = artistIdToName.get(spotifyArtistId) ?? spotifyArtistId;
     console.log(

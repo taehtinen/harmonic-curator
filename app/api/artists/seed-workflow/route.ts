@@ -1,6 +1,7 @@
 import { WorkflowFailedError, WorkflowNotFoundError } from "@temporalio/client";
 import { getCurrentUser, userIsAdmin } from "@/lib/auth";
 import { getTemporalClient } from "@/lib/temporal/client";
+import { temporalMaximumAttempts } from "@/lib/temporal/maximumAttempts";
 import { temporalTaskQueue } from "@/lib/temporal/taskQueue";
 import type { SeedArtistWorkflowResult } from "@/lib/seed/seedArtistTypes";
 import { normalizeSpotifyArtistId } from "@/lib/seed/seedArtistFromSpotifyId";
@@ -61,6 +62,7 @@ export async function POST(request: Request) {
       taskQueue: temporalTaskQueue(),
       workflowId,
       args: [spotifyUrlOrId],
+      retry: { maximumAttempts: temporalMaximumAttempts },
     });
 
     return NextResponse.json({
