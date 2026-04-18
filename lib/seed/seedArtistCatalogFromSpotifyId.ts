@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { SpotifyClient, type SpotifyTrack } from "@/lib/spotifyClient";
 import { normalizeSpotifyArtistId } from "@/lib/seed/seedArtistFromSpotifyId";
+import type { SeedArtistCatalogResult } from "@/lib/seed/seedArtistTypes";
 
 /** On compilations, album track listings include every song; only keep tracks that credit this artist. */
 function trackCreditsArtist(
@@ -16,7 +17,7 @@ function trackCreditsArtist(
  */
 export async function seedArtistCatalogFromSpotifyId(
   raw: unknown,
-): Promise<string> {
+): Promise<SeedArtistCatalogResult> {
   const spotifyId = normalizeSpotifyArtistId(raw);
   const spotifyClient = new SpotifyClient();
 
@@ -153,5 +154,9 @@ export async function seedArtistCatalogFromSpotifyId(
 
   const summary = `Finished. Tracks created: ${createdTracks}; skipped (missing/unplayable): ${skippedTracks}`;
   console.log(summary);
-  return summary;
+  return {
+    albumsCount: albums.length,
+    tracksCreated: createdTracks,
+    skippedTracks,
+  };
 }

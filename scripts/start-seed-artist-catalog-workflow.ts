@@ -23,7 +23,7 @@ async function main() {
 
   console.log(`Started workflow ${handle.workflowId} run ${handle.firstExecutionRunId}`);
   const result = await handle.result();
-  console.log(result);
+  console.log(JSON.stringify(result, null, 2));
 }
 
 main().catch((err) => {

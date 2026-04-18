@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { SpotifyClient } from "@/lib/spotifyClient";
+import type { SeedArtistProfileResult } from "@/lib/seed/seedArtistTypes";
 import { mergeSpotifyGenresWithExisting } from "@/scripts/mergeSpotifyGenresForSeed";
 
 const INPUT_HINT =
@@ -61,7 +62,9 @@ export function normalizeSpotifyArtistId(raw: unknown): string {
 }
 
 /** Fetches from Spotify and upserts `Artist`. Caller owns Prisma lifecycle (e.g. disconnect in CLI). */
-export async function seedArtistFromSpotifyId(raw: unknown): Promise<string> {
+export async function seedArtistFromSpotifyId(
+  raw: unknown,
+): Promise<SeedArtistProfileResult> {
   const spotifyId = normalizeSpotifyArtistId(raw);
   const spotifyClient = new SpotifyClient();
   const artist = await spotifyClient.getArtist(spotifyId);
@@ -94,5 +97,9 @@ export async function seedArtistFromSpotifyId(raw: unknown): Promise<string> {
     },
   });
 
-  return `Upserted artist: ${row.name} (db id=${row.id}, spotifyId=${row.spotifyId})`;
+  return {
+    artistDbId: row.id.toString(),
+    spotifyId: row.spotifyId,
+    name: row.name,
+  };
 }

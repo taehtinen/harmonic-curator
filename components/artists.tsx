@@ -419,6 +419,8 @@ export default async function Artists({
                   noGenres,
                 })
               }
+              canAddArtist={canIgnoreArtists}
+              addArtistUrlContext={{ page, sort, order, q, noGenres }}
             />
 
             {totalPages > 1 && (

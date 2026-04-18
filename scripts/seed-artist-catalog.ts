@@ -11,7 +11,10 @@ async function main() {
     return;
   }
 
-  await seedArtistCatalogFromSpotifyId(raw);
+  const summary = await seedArtistCatalogFromSpotifyId(raw);
+  console.log(
+    `Finished. Albums: ${summary.albumsCount}; tracks created: ${summary.tracksCreated}; skipped: ${summary.skippedTracks}`,
+  );
 }
 
 main()

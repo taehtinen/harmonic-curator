@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { ReactElement } from "react";
 import type { Artist } from "@prisma/client";
-import type { ArtistsListSort } from "@/lib/artists-url";
+import type { ArtistsHrefContext, ArtistsListSort } from "@/lib/artists-url";
+import ArtistsAddArtistButton from "@/components/artists-add-artist-button";
 
 export type ArtistListRow = Artist & {
   _count: { tracks: number };
@@ -27,6 +28,8 @@ export default function ArtistsTable({
   tracksSortHref,
   latestReleaseSortHref,
   getRowHref,
+  canAddArtist,
+  addArtistUrlContext,
 }: {
   artists: ArtistListRow[];
   panelOpen: boolean;
@@ -44,6 +47,8 @@ export default function ArtistsTable({
   tracksSortHref: string;
   latestReleaseSortHref: string;
   getRowHref: (artistId: string) => string;
+  canAddArtist: boolean;
+  addArtistUrlContext: ArtistsHrefContext;
 }) {
   const hasSearch = searchQuery.length > 0;
 
@@ -89,6 +94,9 @@ export default function ArtistsTable({
             Search
           </button>
         </form>
+        {canAddArtist ? (
+          <ArtistsAddArtistButton urlContext={addArtistUrlContext} />
+        ) : null}
         {hasSearch ? (
           <Link
             href={clearSearchHref}

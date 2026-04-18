@@ -10,8 +10,10 @@ async function main() {
   }
 
   try {
-    const message = await seedArtistFromSpotifyId(raw);
-    console.log(message);
+    const profile = await seedArtistFromSpotifyId(raw);
+    console.log(
+      `Upserted artist: ${profile.name} (db id=${profile.artistDbId}, spotifyId=${profile.spotifyId})`,
+    );
   } catch (err) {
     console.error(err);
     process.exitCode = 1;
