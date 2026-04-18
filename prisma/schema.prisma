@@ -17,6 +17,13 @@ enum UserStatus {
   ADMIN
 }
 
+enum LoginAttemptResult {
+  SUCCESS
+  UNKNOWN_USER
+  NO_PASSWORD_SET
+  INVALID_PASSWORD
+}
+
 /** How tracks are chosen when a playlist uses explicit artist selection (`artistIds` non-empty). */
 enum PlaylistArtistAlgorithm {
   /** Newest albums first; tracks ordered by album release and disc/track number (previous behavior). */
@@ -38,8 +45,25 @@ model User {
 
   playlists           Playlist[]
   spotifyAccounts     UserSpotifyAccount[]
+  loginAttempts       LoginAttempt[]
 
   @@map("user")
+}
+
+model LoginAttempt {
+  id         BigInt              @id @default(autoincrement())
+  createdAt  DateTime            @default(now())
+  username   String
+  userId     BigInt?
+  result     LoginAttemptResult
+  ipAddress  String?
+  userAgent  String?             @db.Text
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("login_attempt")
 }
 
 /**

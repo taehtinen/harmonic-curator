@@ -1,7 +1,8 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { UserStatus } from "@prisma/client";
+import { LoginAttemptResult, UserStatus } from "@prisma/client";
 
+import { recordLoginAttempt } from "@/lib/login-attempt";
 import { verifyPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
 
@@ -25,11 +26,38 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!username || !password) return null;
 
         const user = await prisma.user.findUnique({ where: { username } });
-        if (!user) return null;
-        if (!user.passwordHash) return null;
+        if (!user) {
+          await recordLoginAttempt({
+            username,
+            userId: null,
+            result: LoginAttemptResult.UNKNOWN_USER,
+          });
+          return null;
+        }
+        if (!user.passwordHash) {
+          await recordLoginAttempt({
+            username,
+            userId: user.id,
+            result: LoginAttemptResult.NO_PASSWORD_SET,
+          });
+          return null;
+        }
 
         const ok = await verifyPassword(password, user.passwordHash);
-        if (!ok) return null;
+        if (!ok) {
+          await recordLoginAttempt({
+            username,
+            userId: user.id,
+            result: LoginAttemptResult.INVALID_PASSWORD,
+          });
+          return null;
+        }
+
+        await recordLoginAttempt({
+          username,
+          userId: user.id,
+          result: LoginAttemptResult.SUCCESS,
+        });
 
         return {
           id: user.id.toString(),
