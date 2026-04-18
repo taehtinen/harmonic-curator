@@ -31,8 +31,8 @@ export default function PlaylistSidebarEdit({
 }) {
   return (
     <aside className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50/80 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/60">
-      <section className="shrink-0 p-5">
-        <div className="flex items-start justify-between gap-4">
+      <section className="flex min-h-0 flex-1 flex-col p-5">
+        <div className="flex shrink-0 items-start justify-between gap-4">
           <h2 className="min-w-0 text-xl font-semibold tracking-tight">Edit playlist</h2>
           <Link
             href={cancelHref}
@@ -42,7 +42,7 @@ export default function PlaylistSidebarEdit({
           </Link>
         </div>
 
-        <div className="mt-6">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pt-6">
           <PlaylistDetailsForm
             key={playlistId}
             action={savePlaylistDetailsAction}
