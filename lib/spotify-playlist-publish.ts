@@ -149,6 +149,20 @@ async function createUserSpotifyPlaylist(
   return body.id;
 }
 
+async function updateUserSpotifyPlaylistDetails(
+  accessToken: string,
+  playlistSpotifyId: string,
+  name: string,
+  description: string,
+): Promise<void> {
+  const url = `${API}/playlists/${playlistSpotifyId}`;
+  const res = await userSpotifyFetch(accessToken, "PUT", url, {
+    name: name.slice(0, SPOTIFY_PLAYLIST_NAME_MAX),
+    description: description.slice(0, SPOTIFY_PLAYLIST_DESCRIPTION_MAX),
+  });
+  await ensureOk(res, "Spotify PUT update playlist");
+}
+
 async function postPlaylistItems(
   accessToken: string,
   playlistSpotifyId: string,
@@ -245,6 +259,12 @@ export async function publishPlaylistTracksForUser(input: {
         playlist = { ...playlist, spotifyId: spotifyPlaylistId };
       }
 
+      await updateUserSpotifyPlaylistDetails(
+        token,
+        spotifyPlaylistId,
+        playlist.name,
+        playlist.description ?? "",
+      );
       await syncOnce(token, spotifyPlaylistId, desiredTrackIds);
       await prisma.playlist.update({
         where: { id: playlist.id },
