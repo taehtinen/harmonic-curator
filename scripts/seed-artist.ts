@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { SpotifyClient } from "@/lib/spotifyClient";
+import { mergeSpotifyGenresWithExisting } from "./mergeSpotifyGenresForSeed";
 
 function normalizeSpotifyArtistId(raw: string): string {
   const s = raw.trim();
@@ -28,11 +29,18 @@ async function main() {
     return;
   }
 
+  const existing = await prisma.artist.findUnique({
+    where: { spotifyId: artist.id },
+    select: { genres: true },
+  });
+
   const row = await prisma.artist.upsert({
     where: { spotifyId: artist.id },
     update: {
       name: artist.name,
-      genres: artist.genres,
+      genres: existing
+        ? mergeSpotifyGenresWithExisting(existing.genres, artist.genres)
+        : artist.genres,
       popularity: artist.popularity,
       followers: artist.followers.total,
     },
