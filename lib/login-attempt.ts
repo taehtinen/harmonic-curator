@@ -37,3 +37,41 @@ export async function recordLoginAttempt(input: {
     console.error("recordLoginAttempt failed", err);
   }
 }
+
+/** Row shape for login activity UI (settings self-view or admin audit). */
+export type LoginActivityRow = {
+  id: string;
+  createdAt: Date;
+  result: LoginAttemptResult;
+  ipAddress: string | null;
+  userAgent: string | null;
+  /** Set when listing attempts across users (admin). */
+  username?: string;
+  /** Matching app user id, if any (null for unknown-user attempts). */
+  userId?: string | null;
+};
+
+const MAX_LOGIN_ATTEMPTS_LISTED_PER_USER = 100;
+
+export async function listLoginAttemptsForUser(userId: bigint): Promise<LoginActivityRow[]> {
+  const rows = await prisma.loginAttempt.findMany({
+    where: { userId },
+    select: {
+      id: true,
+      createdAt: true,
+      result: true,
+      ipAddress: true,
+      userAgent: true,
+    },
+    orderBy: { createdAt: "desc" },
+    take: MAX_LOGIN_ATTEMPTS_LISTED_PER_USER,
+  });
+
+  return rows.map((r) => ({
+    id: r.id.toString(),
+    createdAt: r.createdAt,
+    result: r.result,
+    ipAddress: r.ipAddress,
+    userAgent: r.userAgent,
+  }));
+}

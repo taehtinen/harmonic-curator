@@ -1,8 +1,10 @@
 import Link from "next/link";
 
+import LoginActivityTable from "@/components/login-activity-table";
 import SpotifyIcon from "@/components/spotify-icon";
 import UnlinkSpotifyAccountForm from "@/components/unlink-spotify-account-form";
 import { requireUser } from "@/lib/auth";
+import { listLoginAttemptsForUser } from "@/lib/login-attempt";
 import { listLinkedSpotifyAccountsForUser } from "@/lib/user-spotify-account";
 
 function formatWhen(d: Date) {
@@ -23,7 +25,9 @@ export default async function SettingsPage({
 }) {
   const user = await requireUser();
   const params = await searchParams;
-  const accounts = await listLinkedSpotifyAccountsForUser(BigInt(user.id));
+  const userId = BigInt(user.id);
+  const accounts = await listLinkedSpotifyAccountsForUser(userId);
+  const loginAttempts = await listLoginAttemptsForUser(userId);
 
   const linkedOk = params.spotify_linked === "1";
   const unlinkedOk = params.spotify_unlinked === "1";
@@ -123,6 +127,20 @@ export default async function SettingsPage({
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="mt-12" aria-labelledby="login-activity-heading">
+        <h2
+          id="login-activity-heading"
+          className="text-lg font-medium text-zinc-900 dark:text-zinc-50"
+        >
+          Login activity
+        </h2>
+        <LoginActivityTable
+          rows={loginAttempts}
+          emptyMessage="No login attempts recorded yet."
+          description="Recent sign-in attempts for your account, newest first (up to 100 entries)."
+        />
       </section>
     </div>
   );

@@ -1,6 +1,8 @@
 import { UserStatus } from "@prisma/client";
 
+import LoginActivityTable from "@/components/login-activity-table";
 import { requireAdmin } from "@/lib/auth";
+import { loginAttemptsAdminCap, listLoginAttemptsForAdminView } from "@/lib/login-attempt-list-admin";
 import { listUsersForAdminView } from "@/lib/user-list-admin";
 
 function formatWhen(d: Date) {
@@ -14,9 +16,11 @@ export default async function Users() {
   const currentUser = await requireAdmin();
 
   const rows = await listUsersForAdminView();
+  const loginAttempts = await listLoginAttemptsForAdminView();
+  const loginCap = loginAttemptsAdminCap();
 
   return (
-    <div className="mx-auto max-w-4xl flex-1 overflow-auto px-6 py-8">
+    <div className="mx-auto max-w-6xl flex-1 overflow-auto px-6 py-8">
       <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
         Users
       </h1>
@@ -85,6 +89,22 @@ export default async function Users() {
           </table>
         </div>
       )}
+
+      <section className="mt-14" aria-labelledby="login-activity-admin-heading">
+        <h2
+          id="login-activity-admin-heading"
+          className="text-lg font-medium text-zinc-900 dark:text-zinc-50"
+        >
+          Login activity
+        </h2>
+        <LoginActivityTable
+          rows={loginAttempts}
+          emptyMessage="No login attempts recorded yet."
+          description={`All recorded sign-in attempts system-wide, newest first (up to ${loginCap} rows).`}
+          auditColumns
+          minWidthClass="min-w-[52rem]"
+        />
+      </section>
     </div>
   );
 }
