@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { normalizeArtistSearchQuery } from "@/lib/artist-search-query";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
@@ -11,7 +12,7 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const q = (searchParams.get("q") ?? "").trim();
+  const q = normalizeArtistSearchQuery(searchParams.get("q") ?? "");
   if (q.length < 2) {
     return NextResponse.json({ artists: [] satisfies { id: string; name: string }[] });
   }
@@ -19,7 +20,10 @@ export async function GET(request: Request) {
   const artists = await prisma.artist.findMany({
     where: {
       isIgnored: false,
-      name: { contains: q, mode: "insensitive" },
+      OR: [
+        { name: { contains: q, mode: "insensitive" } },
+        { spotifyId: { contains: q, mode: "insensitive" } },
+      ],
     },
     select: { id: true, name: true },
     orderBy: [{ popularity: "desc" }, { name: "asc" }],

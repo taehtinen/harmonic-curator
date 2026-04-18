@@ -1,3 +1,4 @@
+import { normalizeArtistSearchQuery } from "@/lib/artist-search-query";
 import { prisma } from "@/lib/prisma";
 import { SpotifyClient } from "@/lib/spotifyClient";
 import type { SeedArtistProfileResult } from "@/lib/seed/seedArtistTypes";
@@ -54,11 +55,7 @@ function coerceSpotifyArtistInputString(raw: unknown): string {
 
 export function normalizeSpotifyArtistId(raw: unknown): string {
   const s = coerceSpotifyArtistInputString(raw);
-  const uri = /^spotify:artist:(.+)$/.exec(s);
-  if (uri) return uri[1];
-  const openUrl = /open\.spotify\.com\/artist\/([^/?#]+)/.exec(s);
-  if (openUrl) return openUrl[1];
-  return s;
+  return normalizeArtistSearchQuery(s);
 }
 
 /** Fetches from Spotify and upserts `Artist`. Caller owns Prisma lifecycle (e.g. disconnect in CLI). */

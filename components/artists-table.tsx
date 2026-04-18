@@ -64,13 +64,13 @@ export default function ArtistsTable({
             <input type="hidden" name="artist" value={selectedArtistId} />
           ) : null}
           <label htmlFor="artists-name-search" className="sr-only">
-            Search artists by name
+            Search artists by name or Spotify ID
           </label>
           <input
             id="artists-name-search"
             name="q"
             type="search"
-            placeholder="Search by name…"
+            placeholder="Search by name or Spotify ID/URL…"
             defaultValue={searchQuery}
             autoComplete="off"
             className="min-w-[12rem] flex-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/30 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:border-zinc-500 dark:focus:ring-zinc-500/30"

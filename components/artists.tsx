@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser, userIsAdmin } from "@/lib/auth";
 import ArtistsTable, { type ArtistListRow } from "@/components/artists-table";
 import ArtistSidebar from "@/components/artist-sidebar";
+import { normalizeArtistSearchQuery } from "@/lib/artist-search-query";
 import {
   buildArtistsUrl,
   type ArtistsListOrder,
@@ -82,7 +83,7 @@ export default async function Artists({
     q: qParam,
     noGenres: noGenresParam,
   } = await searchParams;
-  const q = (qParam ?? "").trim();
+  const q = normalizeArtistSearchQuery(qParam ?? "");
   const noGenres = parseNoGenresFilter(noGenresParam);
   const sort = parseSort(sortParam);
   const order = parseOrder(orderParam);
@@ -94,10 +95,10 @@ export default async function Artists({
     isIgnored: false as const,
     ...(q
       ? {
-          name: {
-            contains: q,
-            mode: "insensitive" as const,
-          },
+          OR: [
+            { name: { contains: q, mode: "insensitive" as const } },
+            { spotifyId: { contains: q, mode: "insensitive" as const } },
+          ],
         }
       : {}),
     ...(noGenres ? { genres: { equals: [] as string[] } } : {}),
@@ -123,9 +124,10 @@ export default async function Artists({
       order === "asc"
         ? Prisma.raw("ASC NULLS FIRST")
         : Prisma.raw("DESC NULLS LAST");
+    const searchPattern = `%${escapeLikePattern(q)}%`;
     const searchSql =
       q.length > 0
-        ? Prisma.sql`AND a.name ILIKE ${`%${escapeLikePattern(q)}%`} ESCAPE '\\'`
+        ? Prisma.sql`AND (a.name ILIKE ${searchPattern} ESCAPE '\\' OR a."spotifyId" ILIKE ${searchPattern} ESCAPE '\\')`
         : Prisma.empty;
     const noGenresSql = noGenres
       ? Prisma.sql`AND cardinality(a.genres) = 0`
