@@ -1,0 +1,27 @@
+---
+description: Git commit messages — very short subject lines like existing history
+alwaysApply: true
+---
+
+# Git commit messages
+
+When creating commits for this repo (including suggested messages), match the style in `git log --oneline`:
+
+- **One short subject line** only, unless the user explicitly asks for a body.
+- **Roughly two to six words** is typical; keep it tight.
+- **No trailing period** on the subject.
+- **Capitalization**: Title Case phrases (`Login throttling`, `Main page`) or **lowercase with hyphens** for compact feature labels (`playlists-table`, `playlist.userId`) — both appear in history; pick whichever fits the change.
+- Optional **`Add …`** prefix is fine when it stays short (`Add Users page`).
+
+## Examples (good)
+
+- `Login throttling`
+- `Main page`
+- `Genre delete`
+- `Add Users page`
+- `playlist.userId`
+
+## Examples (avoid unless asked)
+
+- Long single-line subjects that read like full sentences with clauses.
+- Conventional-commit prefixes (`feat:`, `fix:`) — not used in this repo’s history.
