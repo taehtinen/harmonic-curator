@@ -52,7 +52,7 @@ export default function ArtistsTable({
       <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
         <form
           method="get"
-          action="/"
+          action="/artists"
           className="flex min-w-0 flex-1 flex-wrap items-center gap-2"
         >
           <input type="hidden" name="sort" value={sort} />
