@@ -20,7 +20,8 @@
     "seed:genre-playlists": "tsx scripts/seed-genre-playlists.ts",
     "temporal:worker": "tsx scripts/temporal-worker.ts",
     "temporal:seed-artist": "tsx scripts/start-seed-artist-workflow.ts",
-    "temporal:seed-artist-catalog": "tsx scripts/start-seed-artist-catalog-workflow.ts"
+    "temporal:seed-artist-catalog": "tsx scripts/start-seed-artist-catalog-workflow.ts",
+    "temporal:seed-playlist-artists": "tsx scripts/start-seed-playlist-artists-workflows.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.1.0",
