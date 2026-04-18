@@ -32,6 +32,7 @@ export default function PlaylistDetailsForm({
   showTracksSubheading = true,
   showMaxTracksHelp = true,
   disableSelectArtistsWhenCriteriaFilled = false,
+  saveFlash = null,
 }: {
   action: (formData: FormData) => Promise<void>;
   defaultName?: string;
@@ -51,6 +52,7 @@ export default function PlaylistDetailsForm({
   showTracksSubheading?: boolean;
   showMaxTracksHelp?: boolean;
   disableSelectArtistsWhenCriteriaFilled?: boolean;
+  saveFlash?: "created" | "updated" | null;
 }) {
   const [artistAlgorithm, setArtistAlgorithm] = useState(defaultArtistAlgorithm);
 
@@ -166,10 +168,18 @@ export default function PlaylistDetailsForm({
         </div>
       </div>
 
-      <div className="pt-1">
+      <div className="flex flex-col gap-2 pt-1">
         <button type="submit" className={submitClassName}>
           {submitLabel}
         </button>
+        {saveFlash === "updated" || saveFlash === "created" ? (
+          <p
+            className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-2 text-sm leading-snug text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100"
+            role="status"
+          >
+            {saveFlash === "created" ? "Playlist created." : "Changes saved."}
+          </p>
+        ) : null}
       </div>
     </form>
   );
