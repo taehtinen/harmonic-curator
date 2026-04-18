@@ -38,7 +38,7 @@ export default function PlaylistSidebarDetails({
   hasLinkedSpotify: boolean;
   publishFlash: PublishFlash;
 }) {
-  const canPublishToSpotify = hasLinkedSpotify && playlist.spotifyId != null;
+  const canPublishToSpotify = hasLinkedSpotify;
 
   return (
     <section className="shrink-0 p-5">
@@ -126,9 +126,7 @@ export default function PlaylistSidebarDetails({
                 title={
                   canPublishToSpotify
                     ? undefined
-                    : !hasLinkedSpotify
-                      ? "Link a Spotify account in Settings to publish."
-                      : "This playlist is not linked to Spotify yet."
+                    : "Link a Spotify account in Settings to publish."
                 }
                 className="w-full rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
               >

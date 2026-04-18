@@ -124,6 +124,31 @@ async function deletePlaylistItems(
   }
 }
 
+/** Spotify limits for POST /users/{id}/playlists */
+const SPOTIFY_PLAYLIST_NAME_MAX = 100;
+const SPOTIFY_PLAYLIST_DESCRIPTION_MAX = 300;
+
+async function createUserSpotifyPlaylist(
+  accessToken: string,
+  spotifyUserId: string,
+  name: string,
+  description: string,
+): Promise<string> {
+  const url = `${API}/users/${encodeURIComponent(spotifyUserId)}/playlists`;
+  const res = await userSpotifyFetch(accessToken, "POST", url, {
+    name: name.slice(0, SPOTIFY_PLAYLIST_NAME_MAX),
+    public: true,
+    collaborative: false,
+    description: description.slice(0, SPOTIFY_PLAYLIST_DESCRIPTION_MAX),
+  });
+  await ensureOk(res, "Spotify POST create playlist");
+  const body = (await res.json()) as { id?: string };
+  if (!body.id) {
+    throw new Error("Spotify POST create playlist: missing id in response");
+  }
+  return body.id;
+}
+
 async function postPlaylistItems(
   accessToken: string,
   playlistSpotifyId: string,
@@ -155,7 +180,7 @@ export async function publishPlaylistTracksForUser(input: {
   appUserId: bigint;
   playlistDbId: bigint;
 }): Promise<{ ok: true } | { ok: false; message: string }> {
-  const playlist = await prisma.playlist.findFirst({
+  let playlist = await prisma.playlist.findFirst({
     where: { id: input.playlistDbId, userId: input.appUserId },
     include: {
       playlistTracks: {
@@ -169,18 +194,11 @@ export async function publishPlaylistTracksForUser(input: {
     return { ok: false, message: "Playlist not found." };
   }
 
-  if (playlist.spotifyId == null) {
-    return {
-      ok: false,
-      message: "This playlist is not linked to a Spotify playlist yet.",
-    };
-  }
-
   const desiredTrackIds = playlist.playlistTracks.map((pt) => pt.track.spotifyId);
 
   const accounts = await prisma.userSpotifyAccount.findMany({
     where: { userId: input.appUserId },
-    select: { id: true },
+    select: { id: true, spotifyUserId: true },
     orderBy: { createdAt: "desc" },
   });
 
@@ -192,10 +210,42 @@ export async function publishPlaylistTracksForUser(input: {
   }
 
   let lastMessage = "Could not publish with any linked Spotify account.";
-  for (const { id: accountId } of accounts) {
+  for (const { id: accountId, spotifyUserId } of accounts) {
     try {
       const token = await getValidAccessTokenForAccount(accountId);
-      await syncOnce(token, playlist.spotifyId, desiredTrackIds);
+
+      let spotifyPlaylistId: string | null = playlist.spotifyId;
+      if (spotifyPlaylistId == null) {
+        const newSpotifyId = await createUserSpotifyPlaylist(
+          token,
+          spotifyUserId,
+          playlist.name,
+          playlist.description,
+        );
+        const linked = await prisma.playlist.updateMany({
+          where: {
+            id: playlist.id,
+            userId: input.appUserId,
+            spotifyId: null,
+          },
+          data: { spotifyId: newSpotifyId },
+        });
+        if (linked.count === 0) {
+          const row: { spotifyId: string | null } | null = await prisma.playlist.findFirst({
+            where: { id: playlist.id, userId: input.appUserId },
+            select: { spotifyId: true },
+          });
+          spotifyPlaylistId = row?.spotifyId ?? null;
+          if (spotifyPlaylistId == null) {
+            throw new Error("Could not save new Spotify playlist id.");
+          }
+        } else {
+          spotifyPlaylistId = newSpotifyId;
+        }
+        playlist = { ...playlist, spotifyId: spotifyPlaylistId };
+      }
+
+      await syncOnce(token, spotifyPlaylistId, desiredTrackIds);
       await prisma.playlist.update({
         where: { id: playlist.id },
         data: { lastSpotifyPublishAt: new Date() },
