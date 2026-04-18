@@ -353,13 +353,6 @@ export default async function Artists({
               order={order}
               searchQuery={q}
               noGenresFilter={noGenres}
-              clearSearchHref={buildArtistsUrl({
-                page: 1,
-                sort,
-                order,
-                artistId: openArtistId,
-                noGenres,
-              })}
               sortArrow={sortArrow}
               nameSortHref={buildArtistsUrl({
                 page: pageForSort("name"),

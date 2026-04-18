@@ -19,7 +19,6 @@ export default function ArtistsTable({
   order,
   searchQuery,
   noGenresFilter,
-  clearSearchHref,
   sortArrow,
   nameSortHref,
   spotifySortHref,
@@ -38,7 +37,6 @@ export default function ArtistsTable({
   order: string;
   searchQuery: string;
   noGenresFilter: boolean;
-  clearSearchHref: string;
   sortArrow: (col: SortColumn) => ReactElement | null;
   nameSortHref: string;
   spotifySortHref: string;
@@ -96,14 +94,6 @@ export default function ArtistsTable({
         </form>
         {canAddArtist ? (
           <ArtistsAddArtistButton urlContext={addArtistUrlContext} />
-        ) : null}
-        {hasSearch ? (
-          <Link
-            href={clearSearchHref}
-            className="shrink-0 text-sm font-medium text-zinc-600 underline-offset-2 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
-          >
-            Clear
-          </Link>
         ) : null}
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
