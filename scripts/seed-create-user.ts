@@ -57,7 +57,7 @@ async function main() {
   const row = await prisma.user.upsert({
     where: { username },
     create: { username, passwordHash },
-    update: { passwordHash },
+    update: { passwordHash, registrationToken: null },
   });
 
   console.log(`Upserted user: ${row.username} (db id=${row.id})`);

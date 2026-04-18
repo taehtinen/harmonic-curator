@@ -26,12 +26,15 @@ enum PlaylistArtistAlgorithm {
 }
 
 model User {
-  id           BigInt     @id @default(autoincrement())
-  username     String     @unique
-  passwordHash String
-  status       UserStatus @default(USER)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id                 BigInt     @id @default(autoincrement())
+  username           String     @unique
+  /** Argon2id hash; null while the account is invite-only (`registrationToken` set). */
+  passwordHash       String?
+  /** Opaque invite token; null after the user sets a password. */
+  registrationToken  String?    @unique
+  status             UserStatus @default(USER)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
 
   playlists           Playlist[]
   spotifyAccounts     UserSpotifyAccount[]
