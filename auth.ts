@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import { LoginAttemptResult, UserStatus } from "@prisma/client";
 
 import { recordLoginAttempt } from "@/lib/login-attempt";
+import { applyLoginThrottleForUsername } from "@/lib/login-throttle";
 import { verifyPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
 
@@ -24,6 +25,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const password =
           typeof credentials?.password === "string" ? credentials.password : "";
         if (!username || !password) return null;
+
+        await applyLoginThrottleForUsername(username);
 
         const user = await prisma.user.findUnique({ where: { username } });
         if (!user) {

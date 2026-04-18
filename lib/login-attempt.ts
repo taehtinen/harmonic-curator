@@ -4,7 +4,11 @@ import type { LoginAttemptResult } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 
-async function requestAuditFields(): Promise<{ ipAddress: string | null; userAgent: string | null }> {
+/** IP and User-Agent from the current request (for login audit / throttling). */
+export async function getLoginRequestAuditFields(): Promise<{
+  ipAddress: string | null;
+  userAgent: string | null;
+}> {
   try {
     const h = await headers();
     const forwarded = h.get("x-forwarded-for");
@@ -22,7 +26,7 @@ export async function recordLoginAttempt(input: {
   userId: bigint | null;
   result: LoginAttemptResult;
 }): Promise<void> {
-  const { ipAddress, userAgent } = await requestAuditFields();
+  const { ipAddress, userAgent } = await getLoginRequestAuditFields();
   try {
     await prisma.loginAttempt.create({
       data: {
