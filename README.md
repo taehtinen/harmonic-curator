@@ -48,6 +48,7 @@ Create a `.env` in the project root (Prisma reads `DATABASE_URL` via [`prisma.co
 | Variable | Required for | Description |
 |----------|----------------|-------------|
 | `DATABASE_URL` | App + Prisma | PostgreSQL connection URL |
+| `ROOT_URL` | Optional | Public app origin without a trailing slash (e.g. `http://127.0.0.1:3000`); `seed:create-user` uses it for absolute registration URLs. Falls back to `AUTH_URL` / `NEXTAUTH_URL` if unset. |
 | `SPOTIFY_CLIENT_ID` | Seeds + `SpotifyClient` | Spotify app client ID |
 | `SPOTIFY_CLIENT_SECRET` | Seeds + `SpotifyClient` | Spotify app secret |
 | `SPOTIFY_MARKET` | Seeds + `SpotifyClient` | ISO market code for artist/track requests (e.g. `FI`) |
@@ -97,7 +98,7 @@ Temporal UI: [http://localhost:8080](http://localhost:8080). The workflow uses t
 | `npm run seed:artist-catalog -- <id-or-url>` | Upsert one artist and sync **albums and tracks** from Spotify (full catalog pass for that artist) |
 | `npm run seed:top-tracks` | Batch-fetch top tracks for artists missing or stale refresh; upserts **albums** and **tracks** |
 | `npm run seed:playlist-tracks -- <id-or-url>` | Create or update a **playlist** row, import track order from Spotify, ensure artists/tracks in DB, and rewrite local `playlist_track` rows |
-| `npm run seed:create-user -- <username>` | Upsert a **user** row. **Interactive terminal only**: prints `Password: ` on stderr, reads one line (Enter). Stdin may echo; run from a real TTY. Re-running updates `passwordHash`. |
+| `npm run seed:create-user -- <username>` | Upsert an invite-only **user** row and print `registrationToken` plus an absolute registration URL from `ROOT_URL` (or `AUTH_URL` / `NEXTAUTH_URL`). Re-running prints the existing token; refuses if the user already has a password set. |
 
 Typical flow: configure `.env` → migrate → `seed:artists` and/or `seed:artist` → `seed:top-tracks` (and optionally `seed:artist-catalog` for deep catalogs) → `seed:playlist-tracks` for each Spotify playlist you want in the app → set playlist **genres** / **maxFollowers** / **size** in the database as needed → use **Generate playlist** in the UI for local reordering from criteria → use the web UI.
 
