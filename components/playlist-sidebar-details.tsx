@@ -89,6 +89,10 @@ export default function PlaylistSidebarDetails({
               <span className="font-sans text-zinc-400 dark:text-zinc-500">—</span>
             )}
           </dd>
+          <dt className="self-start text-zinc-500 dark:text-zinc-400">Description</dt>
+          <dd className="min-w-0 whitespace-pre-wrap break-words text-zinc-800 dark:text-zinc-200">
+            {playlist.description.trim() ? playlist.description : "—"}
+          </dd>
         </dl>
 
         <dl className="shrink-0 space-y-3 border-zinc-200 text-sm sm:w-52 sm:border-l sm:pl-6 dark:border-zinc-700">
