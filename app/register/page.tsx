@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import Logo from "@/components/logo";
 import RegisterForm from "@/components/register-form";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -20,6 +21,10 @@ export default async function RegisterPage({
   if (!username || !registrationToken) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-6 bg-zinc-50 px-6 py-16 font-sans dark:bg-black">
+        <Logo />
+        <p className="mb-3 bg-gradient-to-r from-violet-500 to-sky-500 bg-clip-text text-3xl font-bold tracking-tight text-transparent dark:from-violet-400 dark:to-sky-400">
+          Harmonic Curator
+        </p>
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
           Invalid registration link
         </h1>
@@ -39,6 +44,10 @@ export default async function RegisterPage({
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-6 bg-zinc-50 px-6 py-16 font-sans dark:bg-black">
+      <Logo />
+      <p className="mb-3 bg-gradient-to-r from-violet-500 to-sky-500 bg-clip-text text-3xl font-bold tracking-tight text-transparent dark:from-violet-400 dark:to-sky-400">
+        Harmonic Curator
+      </p>
       <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
         Complete registration
       </h1>
