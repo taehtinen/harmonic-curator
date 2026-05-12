@@ -3,8 +3,10 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { recordPlaylistTrackEdit } from "@/lib/playlist-timestamps";
 
+import { normalizeGenreForStorage } from "@/lib/genre-normalize";
+
 export function normalizePlaylistGenres(genres: string[]): string[] {
-  return [...new Set(genres.map((g) => g.trim().toLowerCase()).filter(Boolean))];
+  return [...new Set(genres.map((g) => normalizeGenreForStorage(g)).filter(Boolean))];
 }
 
 /** YYYY-MM-DD for UTC "today" minus `years` (lexicographic compare with Spotify-style `album.releaseDate`). */

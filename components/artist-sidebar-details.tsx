@@ -3,6 +3,7 @@ import SpotifyIcon from "@/components/spotify-icon";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
 import ArtistSidebarAddGenre from "@/components/artist-sidebar-add-genre";
 import type { ArtistWithSidebarData } from "@/components/artist-sidebar-types";
+import { formatGenreDisplayName } from "@/lib/genre-normalize";
 
 export default function ArtistSidebarDetails({
   artist,
@@ -98,16 +99,16 @@ export default function ArtistSidebarDetails({
                   key={`${genre}-${index}`}
                   className="inline-flex max-w-full items-center gap-1 rounded-full border border-zinc-200 bg-zinc-100/80 py-0.5 pl-2.5 pr-1 text-xs font-medium text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-200"
                 >
-                  <span className="min-w-0 truncate">{genre}</span>
+                  <span className="min-w-0 truncate">{formatGenreDisplayName(genre)}</span>
                   {canAddGenre ? (
                     <form action={removeGenreAction} className="inline-flex shrink-0">
                       <input type="hidden" name="artistId" value={artist.id.toString()} />
                       <input type="hidden" name="genre" value={genre} />
                       <input type="hidden" name="returnTo" value={addGenreReturnToHref} />
                       <ConfirmSubmitButton
-                        confirmMessage={`Remove genre "${genre}" from ${artist.name}?`}
+                        confirmMessage={`Remove genre "${formatGenreDisplayName(genre)}" from ${artist.name}?`}
                         className="-mr-0.5 flex h-6 w-6 items-center justify-center rounded-full p-0 leading-none text-zinc-500 hover:bg-zinc-200/90 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-700/90 dark:hover:text-zinc-100"
-                        aria-label={`Remove genre ${genre}`}
+                        aria-label={`Remove genre ${formatGenreDisplayName(genre)}`}
                       >
                         <span className="block text-sm leading-none translate-y-px" aria-hidden>
                           ×
@@ -121,6 +122,7 @@ export default function ArtistSidebarDetails({
             {canAddGenre && (
               <ArtistSidebarAddGenre
                 artistId={artist.id.toString()}
+                existingGenres={artist.genres}
                 addGenreAction={addGenreAction}
                 addGenreReturnToHref={addGenreReturnToHref}
               />

@@ -1,10 +1,10 @@
 import { defineQuery, proxyActivities, setHandler } from "@temporalio/workflow";
-import { temporalMaximumAttempts } from "@/lib/temporal/maximumAttempts";
+import { temporalMaximumAttempts } from "../lib/temporal/maximumAttempts";
 import type * as activities from "./activities";
 import type {
   SeedArtistCatalogResult,
   SeedArtistWorkflowResult,
-} from "@/lib/seed/seedArtistTypes";
+} from "../lib/seed/seedArtistTypes";
 
 const { seedArtistActivity } = proxyActivities<typeof activities>({
   startToCloseTimeout: "10 minutes",

@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactElement } from "react";
 import type { Artist } from "@prisma/client";
 import type { ArtistsHrefContext, ArtistsListSort } from "@/lib/artists-url";
+import { formatGenreDisplayName } from "@/lib/genre-normalize";
 import ArtistsAddArtistButton from "@/components/artists-add-artist-button";
 
 function formatLocalDateOnly(d: Date): string {
@@ -258,7 +259,7 @@ export default function ArtistsTable({
                               key={`${artistId}-${genre}-${index}`}
                               className="inline-flex max-w-full items-center rounded-full border border-zinc-200 bg-zinc-100/80 px-2.5 py-0.5 text-xs font-medium text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-200"
                             >
-                              <span className="truncate">{genre}</span>
+                              <span className="truncate">{formatGenreDisplayName(genre)}</span>
                             </span>
                           ))
                         )}

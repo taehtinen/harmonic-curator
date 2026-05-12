@@ -11,6 +11,7 @@ import {
   type ArtistsListOrder,
   type ArtistsListSort,
 } from "@/lib/artists-url";
+import { genreDedupeKey, normalizeGenreForStorage } from "@/lib/genre-normalize";
 
 const ARTISTS_PER_PAGE = 100;
 
@@ -272,7 +273,7 @@ export default async function Artists({
       throw new Error("Invalid add genre request payload.");
     }
 
-    const normalized = genreValue.trim().toLowerCase();
+    const normalized = normalizeGenreForStorage(genreValue);
     if (!normalized) {
       throw new Error("Genre cannot be empty.");
     }
@@ -284,7 +285,7 @@ export default async function Artists({
       throw new Error("Artist not found.");
     }
 
-    if (artistRecord.genres.some((g) => g.toLowerCase() === normalized)) {
+    if (artistRecord.genres.some((g) => genreDedupeKey(g) === genreDedupeKey(normalized))) {
       throw new Error("Genre already exists for this artist.");
     }
 
@@ -322,14 +323,13 @@ export default async function Artists({
       throw new Error("Artist not found.");
     }
 
-    const normalizedRemove = genreValue.trim().toLowerCase();
+    const normalizedRemove = normalizeGenreForStorage(genreValue);
     if (!normalizedRemove) {
       throw new Error("Genre cannot be empty.");
     }
+    const removeKey = genreDedupeKey(normalizedRemove);
 
-    const nextGenres = artistRecord.genres.filter(
-      (g) => g.toLowerCase() !== normalizedRemove,
-    );
+    const nextGenres = artistRecord.genres.filter((g) => genreDedupeKey(g) !== removeKey);
     if (nextGenres.length === artistRecord.genres.length) {
       throw new Error("Genre not found for this artist.");
     }
