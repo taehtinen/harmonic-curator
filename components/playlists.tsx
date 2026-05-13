@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { PlaylistArtistAlgorithm } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -11,7 +12,8 @@ import { publishPlaylistTracksForUser } from "@/lib/spotify-playlist-publish";
 import PlaylistSidebar from "@/components/playlist-sidebar";
 import PlaylistSidebarEdit from "@/components/playlist-sidebar-edit";
 import PlaylistSidebarNew from "@/components/playlist-sidebar-new";
-import PlaylistsTable from "@/components/playlists-table";
+import PlaylistsTable, { type PlaylistTableRow } from "@/components/playlists-table";
+import ShowOthersPlaylistsCheckbox from "@/components/show-others-playlists-checkbox";
 import {
   buildPlaylistsUrl,
   type PlaylistsListOrder,
@@ -145,6 +147,7 @@ export default async function Playlists({
     sort?: string;
     order?: string;
     q?: string;
+    others?: string;
     playlist?: string;
     new?: string;
     edit?: string;
@@ -158,6 +161,7 @@ export default async function Playlists({
     sort: sortParam,
     order: orderParam,
     q: qParam,
+    others: othersParam,
     playlist: playlistParam,
     new: newParam,
     edit: editParam,
@@ -166,6 +170,7 @@ export default async function Playlists({
     saved: savedParam,
   } = await searchParams;
   const q = (qParam ?? "").trim();
+  const showOthersPlaylists = othersParam !== "0";
   const sort = parseSort(sortParam);
   const order = parseOrder(orderParam);
   const rawPage = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
@@ -184,7 +189,7 @@ export default async function Playlists({
   const saveFlash =
     savedParam === "created" || savedParam === "updated" ? savedParam : null;
 
-  const listWhere = {
+  const mineWhere = {
     userId: ownerUserId,
     ...(q
       ? {
@@ -196,18 +201,56 @@ export default async function Playlists({
       : {}),
   };
 
-  const total = await prisma.playlist.count({ where: listWhere });
+  const othersWhere = {
+    userId: { not: ownerUserId },
+    ...(q
+      ? {
+          name: {
+            contains: q,
+            mode: "insensitive" as const,
+          },
+        }
+      : {}),
+  };
+
+  const total = await prisma.playlist.count({ where: mineWhere });
   const totalPages = Math.ceil(total / PLAYLISTS_PER_PAGE);
   const page = Math.min(rawPage, Math.max(1, totalPages));
   const skip = (page - 1) * PLAYLISTS_PER_PAGE;
-  const playlists = await prisma.playlist.findMany({
-    where: listWhere,
+  const minePlaylists = await prisma.playlist.findMany({
+    where: mineWhere,
     orderBy: { [sort]: order },
     take: PLAYLISTS_PER_PAGE,
     skip,
   });
+
+  let othersTotal = 0;
+  let othersRows: PlaylistTableRow[] = [];
+  if (showOthersPlaylists) {
+    othersTotal = await prisma.playlist.count({ where: othersWhere });
+    const othersFromDb = await prisma.playlist.findMany({
+      where: othersWhere,
+      orderBy: { [sort]: order },
+      take: PLAYLISTS_PER_PAGE,
+      include: { user: { select: { username: true } } },
+    });
+    othersRows = othersFromDb.map(({ user, ...p }) => ({
+      ...p,
+      ownerUsername: user.username,
+    }));
+  }
   const hasPrev = page > 1;
   const hasNext = page < totalPages;
+
+  const pl = (overrides: Partial<Parameters<typeof buildPlaylistsUrl>[0]> = {}) =>
+    buildPlaylistsUrl({
+      page,
+      sort,
+      order,
+      q,
+      showOthersPlaylists,
+      ...overrides,
+    });
 
   function nextOrder(col: PlaylistsListSort): PlaylistsListOrder {
     if (col === sort) return order === "asc" ? "desc" : "asc";
@@ -227,8 +270,9 @@ export default async function Playlists({
     playlistParam && /^\d+$/.test(playlistParam) ? BigInt(playlistParam) : null;
   const selectedPlaylist = selectedPlaylistIdParam
     ? await prisma.playlist.findFirst({
-        where: { id: selectedPlaylistIdParam, userId: ownerUserId },
+        where: { id: selectedPlaylistIdParam },
         include: {
+          user: { select: { username: true } },
           playlistTracks: {
             orderBy: { position: "asc" },
             include: {
@@ -247,33 +291,38 @@ export default async function Playlists({
       })
     : null;
 
+  if (
+    selectedPlaylist &&
+    editParam === "1" &&
+    selectedPlaylist.userId !== ownerUserId
+  ) {
+    redirect(
+      pl({
+        playlistId: selectedPlaylist.id.toString(),
+      }),
+    );
+  }
+
+  const selectedIsOwned =
+    selectedPlaylist != null && selectedPlaylist.userId === ownerUserId;
+
   const showNewPlaylist = newParam === "1" && !selectedPlaylist;
-  const showEditPlaylist = editParam === "1" && Boolean(selectedPlaylist);
+  const showEditPlaylist = editParam === "1" && Boolean(selectedPlaylist) && selectedIsOwned;
   const panelOpen = Boolean(selectedPlaylist) || showNewPlaylist;
   const openPlaylistId = selectedPlaylist?.id.toString();
-  const closePlaylistHref = buildPlaylistsUrl({ page, sort, order, q });
-  const newPlaylistHref = buildPlaylistsUrl({
-    page,
-    sort,
-    order,
-    q,
-    newPlaylist: true,
-  });
+  const closePlaylistHref = pl();
+  const newPlaylistHref = pl({ newPlaylist: true });
   const playlistViewHref = openPlaylistId
-    ? buildPlaylistsUrl({ page, sort, order, playlistId: openPlaylistId, q })
+    ? pl({ playlistId: openPlaylistId })
     : closePlaylistHref;
   const playlistEditHref = openPlaylistId
-    ? buildPlaylistsUrl({
-        page,
-        sort,
-        order,
+    ? pl({
         playlistId: openPlaylistId,
-        q,
         editPlaylist: true,
       })
     : closePlaylistHref;
   const playlistPanelReturnToHref = playlistViewHref;
-  const newPlaylistSaveReturnTo = buildPlaylistsUrl({ page, sort, order, q });
+  const newPlaylistSaveReturnTo = pl();
 
   const artistsHrefContext: ArtistsHrefContext = {
     page: 1,
@@ -283,7 +332,7 @@ export default async function Playlists({
   };
 
   const editDefaultArtists =
-    selectedPlaylist && showEditPlaylist
+    selectedPlaylist && showEditPlaylist && selectedIsOwned
       ? await resolvePlaylistArtistTags(selectedPlaylist.artistIds)
       : [];
 
@@ -474,88 +523,170 @@ export default async function Playlists({
         </header>
         <div className="flex min-h-0 flex-1 gap-4 overflow-hidden">
           <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-hidden">
-            <PlaylistsTable
-              playlists={playlists}
-              panelOpen={panelOpen}
-              selectedPlaylistId={openPlaylistId}
-              preserveNewPlaylist={showNewPlaylist}
-              preserveEditPlaylist={showEditPlaylist}
-              newPlaylistHref={newPlaylistHref}
-              sort={sort}
-              order={order}
-              searchQuery={q}
-              sortArrow={sortArrow}
-              nameSortHref={buildPlaylistsUrl({
-                page: pageForSort("name"),
-                sort: "name",
-                order: nextOrder("name"),
-                playlistId: openPlaylistId,
-                q,
-                newPlaylist: showNewPlaylist,
-                editPlaylist: showEditPlaylist,
-              })}
-              lastPublishedSortHref={buildPlaylistsUrl({
-                page: pageForSort("lastSpotifyPublishAt"),
-                sort: "lastSpotifyPublishAt",
-                order: nextOrder("lastSpotifyPublishAt"),
-                playlistId: openPlaylistId,
-                q,
-                newPlaylist: showNewPlaylist,
-                editPlaylist: showEditPlaylist,
-              })}
-              getRowHref={(playlistId) =>
-                buildPlaylistsUrl({
-                  page,
-                  sort,
-                  order,
-                  playlistId,
-                  q,
+            <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-zinc-200 bg-zinc-50/80 px-4 py-3 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/60">
+              <form
+                method="get"
+                action="/playlists"
+                className="flex min-w-0 flex-1 flex-wrap items-center gap-2"
+              >
+                <input type="hidden" name="sort" value={sort} />
+                <input type="hidden" name="order" value={order} />
+                {openPlaylistId ? (
+                  <input type="hidden" name="playlist" value={openPlaylistId} />
+                ) : null}
+                {showNewPlaylist ? <input type="hidden" name="new" value="1" /> : null}
+                {showEditPlaylist ? <input type="hidden" name="edit" value="1" /> : null}
+                {!showOthersPlaylists ? (
+                  <input type="hidden" name="others" value="0" />
+                ) : null}
+                <label htmlFor="playlists-name-search" className="sr-only">
+                  Search playlists by name
+                </label>
+                <input
+                  id="playlists-name-search"
+                  name="q"
+                  type="search"
+                  placeholder="Search by name…"
+                  defaultValue={q}
+                  autoComplete="off"
+                  className="min-w-[12rem] flex-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/30 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:border-zinc-500 dark:focus:ring-zinc-500/30"
+                />
+                <button
+                  type="submit"
+                  className="shrink-0 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                >
+                  Search
+                </button>
+              </form>
+              <div className="ml-auto flex shrink-0 flex-wrap items-center gap-3">
+                <Link
+                  href={newPlaylistHref}
+                  className="shrink-0 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                >
+                  New playlist
+                </Link>
+                <Suspense
+                  fallback={
+                    <span className="text-sm text-zinc-400 dark:text-zinc-500">…</span>
+                  }
+                >
+                  <ShowOthersPlaylistsCheckbox />
+                </Suspense>
+              </div>
+            </div>
+            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+              <PlaylistsTable
+                sectionTitle="Your playlists"
+                secondaryColumn="description"
+                playlists={minePlaylists}
+                emptyMessageNoSearch="No playlists found. Seed the database to see data here."
+                emptyMessageWithSearch="No playlists match your search."
+                panelOpen={panelOpen}
+                selectedPlaylistId={openPlaylistId}
+                searchQuery={q}
+                sortArrow={sortArrow}
+                nameSortHref={pl({
+                  page: pageForSort("name"),
+                  sort: "name",
+                  order: nextOrder("name"),
+                  playlistId: openPlaylistId,
+                  newPlaylist: showNewPlaylist,
                   editPlaylist: showEditPlaylist,
-                })
-              }
-            />
+                })}
+                lastPublishedSortHref={pl({
+                  page: pageForSort("lastSpotifyPublishAt"),
+                  sort: "lastSpotifyPublishAt",
+                  order: nextOrder("lastSpotifyPublishAt"),
+                  playlistId: openPlaylistId,
+                  newPlaylist: showNewPlaylist,
+                  editPlaylist: showEditPlaylist,
+                })}
+                getRowHref={(playlistId) =>
+                  pl({
+                    playlistId,
+                    editPlaylist: showEditPlaylist,
+                  })
+                }
+              />
 
-            {totalPages > 1 && (
-              <nav className="flex shrink-0 items-center justify-between gap-4 text-sm">
-                <span className="text-zinc-500 dark:text-zinc-400">
-                  Page {page} of {totalPages} · {total.toLocaleString()} playlists
-                </span>
-                <div className="flex gap-2">
-                  {hasPrev && (
-                    <Link
-                      href={buildPlaylistsUrl({
-                        page: page - 1,
-                        sort,
-                        order,
-                        playlistId: openPlaylistId,
-                        q,
-                        newPlaylist: showNewPlaylist,
-                        editPlaylist: showEditPlaylist,
-                      })}
-                      className="rounded-lg border border-zinc-200 bg-white px-3 py-2 font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                    >
-                      Previous
-                    </Link>
-                  )}
-                  {hasNext && (
-                    <Link
-                      href={buildPlaylistsUrl({
-                        page: page + 1,
-                        sort,
-                        order,
-                        playlistId: openPlaylistId,
-                        q,
-                        newPlaylist: showNewPlaylist,
-                        editPlaylist: showEditPlaylist,
-                      })}
-                      className="rounded-lg border border-zinc-200 bg-white px-3 py-2 font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                    >
-                      Next
-                    </Link>
-                  )}
-                </div>
-              </nav>
-            )}
+              {totalPages > 1 && (
+                <nav className="flex shrink-0 items-center justify-between gap-4 text-sm">
+                  <span className="text-zinc-500 dark:text-zinc-400">
+                    Page {page} of {totalPages} · {total.toLocaleString()} playlists
+                  </span>
+                  <div className="flex gap-2">
+                    {hasPrev && (
+                      <Link
+                        href={pl({
+                          page: page - 1,
+                          playlistId: openPlaylistId,
+                          newPlaylist: showNewPlaylist,
+                          editPlaylist: showEditPlaylist,
+                        })}
+                        className="rounded-lg border border-zinc-200 bg-white px-3 py-2 font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                      >
+                        Previous
+                      </Link>
+                    )}
+                    {hasNext && (
+                      <Link
+                        href={pl({
+                          page: page + 1,
+                          playlistId: openPlaylistId,
+                          newPlaylist: showNewPlaylist,
+                          editPlaylist: showEditPlaylist,
+                        })}
+                        className="rounded-lg border border-zinc-200 bg-white px-3 py-2 font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                      >
+                        Next
+                      </Link>
+                    )}
+                  </div>
+                </nav>
+              )}
+            </div>
+
+            {showOthersPlaylists ? (
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                <PlaylistsTable
+                  sectionTitle="Created by others"
+                  supplementalNote={
+                    othersTotal > PLAYLISTS_PER_PAGE
+                      ? `Showing the first ${PLAYLISTS_PER_PAGE.toLocaleString()} of ${othersTotal.toLocaleString()}. Refine search to narrow the list.`
+                      : undefined
+                  }
+                  secondaryColumn="user"
+                  playlists={othersRows}
+                  emptyMessageNoSearch="No playlists from other users."
+                  emptyMessageWithSearch="No other users' playlists match your search."
+                  panelOpen={panelOpen}
+                  selectedPlaylistId={openPlaylistId}
+                  searchQuery={q}
+                  sortArrow={sortArrow}
+                  nameSortHref={pl({
+                    page: pageForSort("name"),
+                    sort: "name",
+                    order: nextOrder("name"),
+                    playlistId: openPlaylistId,
+                    newPlaylist: showNewPlaylist,
+                    editPlaylist: showEditPlaylist,
+                  })}
+                  lastPublishedSortHref={pl({
+                    page: pageForSort("lastSpotifyPublishAt"),
+                    sort: "lastSpotifyPublishAt",
+                    order: nextOrder("lastSpotifyPublishAt"),
+                    playlistId: openPlaylistId,
+                    newPlaylist: showNewPlaylist,
+                    editPlaylist: showEditPlaylist,
+                  })}
+                  getRowHref={(playlistId) =>
+                    pl({
+                      playlistId,
+                    })
+                  }
+                />
+              </div>
+            ) : null}
           </div>
 
           {selectedPlaylist && showEditPlaylist ? (
@@ -573,7 +704,7 @@ export default async function Playlists({
               saveReturnTo={playlistViewHref}
               saveFlash={saveFlash}
             />
-          ) : selectedPlaylist ? (
+          ) : selectedPlaylist && selectedIsOwned ? (
             <PlaylistSidebar
               playlist={selectedPlaylist}
               closeHref={closePlaylistHref}
@@ -591,6 +722,14 @@ export default async function Playlists({
                     ? { kind: "error", message: publishErr }
                     : null
               }
+              artistsHrefContext={artistsHrefContext}
+            />
+          ) : selectedPlaylist ? (
+            <PlaylistSidebar
+              readOnly
+              ownerUsername={selectedPlaylist.user.username}
+              playlist={selectedPlaylist}
+              closeHref={closePlaylistHref}
               artistsHrefContext={artistsHrefContext}
             />
           ) : showNewPlaylist ? (

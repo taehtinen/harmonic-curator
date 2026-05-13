@@ -4,6 +4,10 @@ import type { Playlist } from "@prisma/client";
 
 import type { PlaylistsListSort } from "@/lib/playlists-url";
 
+export type PlaylistTableRow = Playlist & {
+  ownerUsername?: string;
+};
+
 function formatLastPublished(value: Date | null) {
   if (value == null) return "—";
   return value.toLocaleString(undefined, {
@@ -13,28 +17,28 @@ function formatLastPublished(value: Date | null) {
 }
 
 export default function PlaylistsTable({
+  sectionTitle,
+  supplementalNote,
+  secondaryColumn,
   playlists,
+  emptyMessageNoSearch,
+  emptyMessageWithSearch,
   panelOpen,
   selectedPlaylistId,
-  preserveNewPlaylist,
-  preserveEditPlaylist,
-  newPlaylistHref,
-  sort,
-  order,
   searchQuery,
   sortArrow,
   nameSortHref,
   lastPublishedSortHref,
   getRowHref,
 }: {
-  playlists: Playlist[];
+  sectionTitle: string;
+  supplementalNote?: string;
+  secondaryColumn: "description" | "user";
+  playlists: PlaylistTableRow[];
+  emptyMessageNoSearch: string;
+  emptyMessageWithSearch: string;
   panelOpen: boolean;
   selectedPlaylistId?: string;
-  preserveNewPlaylist: boolean;
-  preserveEditPlaylist: boolean;
-  newPlaylistHref: string;
-  sort: string;
-  order: string;
   searchQuery: string;
   sortArrow: (col: PlaylistsListSort) => ReactElement | null;
   nameSortHref: string;
@@ -43,47 +47,20 @@ export default function PlaylistsTable({
 }) {
   const hasSearch = searchQuery.length > 0;
   const emptyColSpan = panelOpen ? 2 : 3;
+  const secondaryHeader =
+    secondaryColumn === "user" ? "User" : "Description";
 
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50/80 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/60">
       <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
-        <form
-          method="get"
-          action="/playlists"
-          className="flex min-w-0 flex-1 flex-wrap items-center gap-2"
-        >
-          <input type="hidden" name="sort" value={sort} />
-          <input type="hidden" name="order" value={order} />
-          {selectedPlaylistId ? (
-            <input type="hidden" name="playlist" value={selectedPlaylistId} />
-          ) : null}
-          {preserveNewPlaylist ? <input type="hidden" name="new" value="1" /> : null}
-          {preserveEditPlaylist ? <input type="hidden" name="edit" value="1" /> : null}
-          <label htmlFor="playlists-name-search" className="sr-only">
-            Search playlists by name
-          </label>
-          <input
-            id="playlists-name-search"
-            name="q"
-            type="search"
-            placeholder="Search by name…"
-            defaultValue={searchQuery}
-            autoComplete="off"
-            className="min-w-[12rem] flex-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/30 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:border-zinc-500 dark:focus:ring-zinc-500/30"
-          />
-          <button
-            type="submit"
-            className="shrink-0 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
-          >
-            Search
-          </button>
-        </form>
-        <Link
-          href={newPlaylistHref}
-          className="shrink-0 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
-        >
-          New playlist
-        </Link>
+        <h2 className="w-full text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+          {sectionTitle}
+        </h2>
+        {supplementalNote ? (
+          <p className="w-full text-xs font-normal normal-case tracking-normal text-zinc-500 dark:text-zinc-400">
+            {supplementalNote}
+          </p>
+        ) : null}
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
         <table className="min-w-full border-collapse text-sm">
@@ -98,7 +75,7 @@ export default function PlaylistsTable({
                   {sortArrow("name")}
                 </Link>
               </th>
-              {!panelOpen && <th className="px-4 py-3">Description</th>}
+              {!panelOpen && <th className="px-4 py-3">{secondaryHeader}</th>}
               <th className="px-4 py-3 text-right whitespace-nowrap">
                 <Link
                   href={lastPublishedSortHref}
@@ -117,9 +94,7 @@ export default function PlaylistsTable({
                   colSpan={emptyColSpan}
                   className="px-4 py-10 text-center text-sm text-zinc-500 dark:text-zinc-400"
                 >
-                  {hasSearch
-                    ? "No playlists match your search."
-                    : "No playlists found. Seed the database to see data here."}
+                  {hasSearch ? emptyMessageWithSearch : emptyMessageNoSearch}
                 </td>
               </tr>
             ) : (
@@ -147,11 +122,25 @@ export default function PlaylistsTable({
                     {!panelOpen && (
                       <td
                         className="max-w-xs truncate p-0 text-zinc-600 dark:text-zinc-300"
-                        title={playlist.description || undefined}
+                        title={
+                          secondaryColumn === "description"
+                            ? playlist.description || undefined
+                            : playlist.ownerUsername || undefined
+                        }
                       >
                         <Link href={rowHref} className={`${rowBaseClass} truncate`}>
-                          {playlist.description || (
-                            <span className="text-zinc-400 dark:text-zinc-500">—</span>
+                          {secondaryColumn === "description" ? (
+                            <>
+                              {playlist.description || (
+                                <span className="text-zinc-400 dark:text-zinc-500">—</span>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              {playlist.ownerUsername || (
+                                <span className="text-zinc-400 dark:text-zinc-500">—</span>
+                              )}
+                            </>
                           )}
                         </Link>
                       </td>

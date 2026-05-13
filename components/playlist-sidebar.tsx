@@ -9,6 +9,8 @@ import type { ArtistsHrefContext } from "@/lib/artists-url";
 export default function PlaylistSidebar({
   playlist,
   closeHref,
+  readOnly,
+  ownerUsername,
   editHref,
   deletePlaylistAction,
   deleteReturnToHref,
@@ -21,14 +23,16 @@ export default function PlaylistSidebar({
 }: {
   playlist: PlaylistWithSidebarTracks;
   closeHref: string;
-  editHref: string;
-  deletePlaylistAction: (formData: FormData) => Promise<void>;
-  deleteReturnToHref: string;
-  generatePlaylistAction: (formData: FormData) => Promise<void>;
-  generatePlaylistReturnToHref: string;
-  publishPlaylistAction: (formData: FormData) => Promise<void>;
-  hasLinkedSpotify: boolean;
-  publishFlash: PublishFlash;
+  readOnly?: boolean;
+  ownerUsername?: string;
+  editHref?: string;
+  deletePlaylistAction?: (formData: FormData) => Promise<void>;
+  deleteReturnToHref?: string;
+  generatePlaylistAction?: (formData: FormData) => Promise<void>;
+  generatePlaylistReturnToHref?: string;
+  publishPlaylistAction?: (formData: FormData) => Promise<void>;
+  hasLinkedSpotify?: boolean;
+  publishFlash?: PublishFlash;
   artistsHrefContext: ArtistsHrefContext;
 }) {
   return (
@@ -36,6 +40,8 @@ export default function PlaylistSidebar({
       <PlaylistSidebarDetails
         playlist={playlist}
         closeHref={closeHref}
+        readOnly={readOnly}
+        ownerUsername={ownerUsername}
         editHref={editHref}
         deletePlaylistAction={deletePlaylistAction}
         deleteReturnToHref={deleteReturnToHref}

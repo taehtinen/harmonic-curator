@@ -8,6 +8,7 @@ export default function PlaylistsPage({
     sort?: string;
     order?: string;
     q?: string;
+    others?: string;
     playlist?: string;
     new?: string;
     edit?: string;

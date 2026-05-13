@@ -12,8 +12,19 @@ export function buildPlaylistsUrl(params: {
   newPlaylist?: boolean;
   /** Opens the edit-details sidebar for the selected playlist */
   editPlaylist?: boolean;
+  /** When false, sets `others=0` so the “Created by others” block stays hidden. Default true. */
+  showOthersPlaylists?: boolean;
 }): string {
-  const { page, sort, order, playlistId, q = "", newPlaylist, editPlaylist } = params;
+  const {
+    page,
+    sort,
+    order,
+    playlistId,
+    q = "",
+    newPlaylist,
+    editPlaylist,
+    showOthersPlaylists = true,
+  } = params;
   const sp = new URLSearchParams();
   sp.set("sort", sort);
   sp.set("order", order);
@@ -22,6 +33,7 @@ export function buildPlaylistsUrl(params: {
     sp.set("playlist", playlistId);
     if (editPlaylist) sp.set("edit", "1");
   } else if (newPlaylist) sp.set("new", "1");
+  if (!showOthersPlaylists) sp.set("others", "0");
   const trimmedQ = q.trim();
   if (trimmedQ) sp.set("q", trimmedQ);
   const qs = sp.toString();

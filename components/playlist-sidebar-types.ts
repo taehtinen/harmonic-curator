@@ -10,6 +10,7 @@ export type PlaylistSidebarTrackRow = PlaylistTrack & {
 
 export type PlaylistWithSidebarTracks = Playlist & {
   playlistTracks: PlaylistSidebarTrackRow[];
+  user?: { username: string };
 };
 
 export type PublishFlash =
