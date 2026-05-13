@@ -47,13 +47,15 @@ export default async function SettingsPage({
           >
             Linked Spotify accounts
           </h2>
-          <Link
-            href="/api/spotify/connect"
-            className="inline-flex items-center gap-2 rounded-lg bg-[#1DB954] px-4 py-2 text-sm font-medium text-black hover:bg-[#1ed760]"
-          >
-            <SpotifyIcon className="h-4 w-4" />
-            Link Spotify account
-          </Link>
+          {accounts.length === 0 ? (
+            <Link
+              href="/api/spotify/connect"
+              className="inline-flex items-center gap-2 rounded-lg bg-[#1DB954] px-4 py-2 text-sm font-medium text-black hover:bg-[#1ed760]"
+            >
+              <SpotifyIcon className="h-4 w-4" />
+              Link Spotify account
+            </Link>
+          ) : null}
         </div>
 
         {linkedOk ? (
